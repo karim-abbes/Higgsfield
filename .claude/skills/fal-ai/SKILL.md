@@ -142,6 +142,31 @@ Crée une voix à partir d'une description texte (« young friendly female baker
 
 ---
 
+## Endpoint OPEN-SOURCE auto-hébergeable — Wan 2.2 S2V
+
+### `fal-ai/wan/v2.2-14b/speech-to-video` (audio-driven talking avatar)
+Image + audio → avatar qui parle. **Le lip-sync est piloté par l'audio fourni**
+→ contrôle 100% de la voix (donner notre TTS Qwen3). Modèle **open source** (poids sur
+HuggingFace `Wan-AI/Wan2.2-S2V-14B`) → candidat pour pipeline local sur RTX 4090.
+
+**Prix fal** : ~$0.15/s (580p) · ~$0.20/s (720p). Jusqu'à 10 min en 480p.
+
+```python
+result = fal_client.subscribe("fal-ai/wan/v2.2-14b/speech-to-video", {
+    "image_url": "<url avatar>",
+    "audio_url": "<url audio qui pilote le lip-sync>",
+    "resolution": "580p",   # ou "720p"
+})
+video_url = result["video"]["url"]
+```
+
+Aussi sur Replicate : `wan-video/wan-2.2-s2v` (inputs `image_url`, `audio_url`, `resolution`).
+
+⚠️ Wan ne génère PAS la voix → on lui fournit un audio (TTS Qwen3 cloné). Avantage :
+règle définitivement le problème de cohérence de voix entre clips.
+
+---
+
 ## Limitations à connaître
 
 | Limitation | Effet | Workaround |
