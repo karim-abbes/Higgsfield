@@ -76,8 +76,16 @@ def search_place(query: str, key: str) -> dict:
         "X-Goog-Api-Key": key,
         "X-Goog-FieldMask": FIELDS,
     })
-    with urllib.request.urlopen(req, timeout=30) as r:
-        data = json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.load(r)
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")
+        sys.exit(
+            f"❌ Places API {e.code}. Réponse Google :\n{detail}\n\n"
+            "Causes 403 fréquentes : 'Places API (New)' pas activée sur le projet · "
+            "facturation non activée · clé restreinte (API/référent/IP)."
+        )
     places = data.get("places") or []
     if not places:
         sys.exit(f"❌ Aucun résultat Places pour : {query!r}")
