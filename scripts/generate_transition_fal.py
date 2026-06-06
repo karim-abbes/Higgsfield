@@ -35,6 +35,7 @@ MODEL_VIDEO = "fal-ai/kling-video/o3/standard/image-to-video"
 MODEL_VOICE = "fal-ai/kling-video/create-voice"
 
 HOOK_CLIP = os.getenv("HOOK_CLIP", "out/clips/hook.mp4")
+CTA_CLIP = os.getenv("CTA_CLIP", "out/clips/cta.mp4")
 START_IMAGE = os.getenv("START_IMAGE", "out/images/google_profile.png")
 END_IMAGE = os.getenv("END_IMAGE", "out/images/bunua_site.png")
 
@@ -67,14 +68,29 @@ def upload(path: str) -> str:
 
 
 def extract_audio_sample() -> str:
-    """Extrait 15s d'audio du clip hook (wav, sans vidéo) via ffmpeg."""
-    if not os.path.exists(HOOK_CLIP):
-        sys.exit(f"❌ Clip source introuvable : {HOOK_CLIP}")
-    print(f"🎤 Extraction de 15s d'audio depuis {HOOK_CLIP}…")
+    """Concatène l'audio de hook + CTA (jusqu'à 30s) en un seul WAV via ffmpeg.
+    Plus de data = meilleur clonage."""
+    sources = [p for p in (HOOK_CLIP, CTA_CLIP) if os.path.exists(p)]
+    if not sources:
+        sys.exit(f"❌ Aucun clip source trouvé pour cloner ({HOOK_CLIP} ou {CTA_CLIP}).")
+    print(f"🎤 Extraction audio depuis {', '.join(sources)} (max 30s)…")
+    os.makedirs(os.path.dirname(VOICE_SAMPLE), exist_ok=True)
+
+    inputs: list[str] = []
+    for src in sources:
+        inputs += ["-i", src]
+    n = len(sources)
+    filter_complex = (
+        "".join(f"[{i}:a]" for i in range(n))
+        + f"concat=n={n}:v=0:a=1[a]"
+    )
     subprocess.run(
         [
             "ffmpeg", "-y", "-loglevel", "error",
-            "-i", HOOK_CLIP, "-t", "15", "-vn",
+            *inputs,
+            "-filter_complex", filter_complex,
+            "-map", "[a]",
+            "-t", "30",
             "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "1",
             VOICE_SAMPLE,
         ],
