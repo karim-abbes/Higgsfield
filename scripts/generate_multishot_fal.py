@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 import urllib.request
 
 import fal_client
@@ -64,7 +65,7 @@ SHOTS = [
     },
 ]
 
-OUTPUT = "out/bunua_clip_multishot.mp4"
+OUTPUT = f"out/bunua_clip_multishot_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
 
 
 def upload(path_or_url: str) -> str:
