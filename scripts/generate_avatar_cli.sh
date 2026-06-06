@@ -24,5 +24,4 @@ with bread and croissants, wooden counter, softly blurred. Shallow depth of fiel
 higgsfield generate create "$MODEL" \
   --prompt "$PROMPT" \
   --aspect_ratio 9:16 \
-  --resolution 2k \
   --wait

@@ -13,6 +13,8 @@ Note: les identifiants de modèles viennent du catalogue officiel
 (https://github.com/higgsfield-ai/cli/blob/main/MODELS.md).
 Le script essaie plusieurs modèles connus et garde le premier qui répond.
 """
+from __future__ import annotations  # compat type hints sur Python 3.9 (Mac)
+
 import json
 import os
 import sys
