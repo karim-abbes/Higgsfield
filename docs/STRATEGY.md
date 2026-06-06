@@ -93,7 +93,7 @@ Pas la production vidéo (maîtrisée) mais :
 
 - **Phase 0 (fait)** : pipeline testimonial bout-en-bout (avatar, clips, voix clonée, transition, sous-titres auto, montage).
 - **Phase 1** : hôte récurrent + script makeover + carte profil Google (renderer) + enrichissement Places.
-- **Phase 2** : orchestrateur CSV (batch, idempotent, manifest, coûts) + file de validation.
+- **Phase 2** : orchestrateur CSV (batch, idempotent, manifest, coûts) + file de validation. **→ Dockerfile ici** (fige ffmpeg + playwright + whisper) pour déploiement VPS. Pas avant : friction inutile en phase proto.
 - **Phase 3** : tracking perfs + boucle d'optimisation + flywheel outbound (offre site gratuit).
 - **Phase 4** : scaling coût (Wan local sur 4090 louée) + élévation hôte en influenceur.
 
