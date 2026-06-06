@@ -131,11 +131,13 @@ Variantes : `0.6b` (plus rapide, moins qualité).
 ```python
 result = fal_client.subscribe("fal-ai/qwen-3-tts/text-to-speech/1.7b", {
     "text": "narration ici…",
-    "speaker_embedding_url": embed_url,
+    "speaker_voice_embedding_file_url": embed_url,  # nom EXACT vérifié
     # optionnel : "reference_text": "<même texte que l'audio cloné>"
 })
 audio_url = first_url(result, "audio", "audio_url")
 ```
+⚠️ Le champ s'appelle `speaker_voice_embedding_file_url` (et non speaker_embedding_url).
+Alternative : `voice` (voix prédéfinie) au lieu de l'embedding.
 
 ### `fal-ai/qwen-3-tts/voice-design/1.7b`
 Crée une voix à partir d'une description texte (« young friendly female bakery owner »). Alternative au clonage si tu n'as pas de sample.

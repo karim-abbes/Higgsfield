@@ -154,7 +154,7 @@ def synthesize_narration(embed_url: str) -> str:
 
     base = {"text": NARRATION}
     last_err = None
-    for key in ("speaker_embedding_url", "voice_url", "embedding_url"):
+    for key in ("speaker_voice_embedding_file_url", "speaker_embedding_url", "voice_url"):
         try:
             result = fal_client.subscribe(
                 M_TTS,
