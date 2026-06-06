@@ -39,7 +39,7 @@ BUNUA = os.getenv("END_IMAGE", "out/bunua_site.png")
 SHOTS = [
     {
         "index": 1,
-        "duration": 2,
+        "duration": "2",
         "prompt": (
             "9:16 vertical UGC selfie. The bakery owner from the reference image holds her "
             "phone at arm's length, smiling at camera. She says: "
@@ -48,7 +48,7 @@ SHOTS = [
     },
     {
         "index": 2,
-        "duration": 3,
+        "duration": "3",
         "prompt": (
             "Cut to a 9:16 phone screen showing a basic Google Business Profile. "
             "Subtle zoom. Same voice continues: '...but find nothing. Just a map pin.'"
@@ -56,7 +56,7 @@ SHOTS = [
     },
     {
         "index": 3,
-        "duration": 5,
+        "duration": "5",
         "prompt": (
             "UI reveal: the Google profile morphs into a clean, professional bakery website. "
             "Same voice: 'Bunua turns your Google profile into a real website. In five minutes. "
