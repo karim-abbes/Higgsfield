@@ -9,19 +9,20 @@ Méthode : **Image (avatar) → Speak (lip-sync) → montage**. Screen-recording
 
 > Garder **UN SEUL** avatar généré et le réutiliser sur tous les plans (cohérence).
 
-### Prompt avatar (option retenue : barbier)
+### Prompt avatar (option retenue : BOULANGERIE)
 ```
 Vertical 9:16 UGC selfie photo, authentic iPhone front-camera look. A friendly
-30-year-old male barber holding the phone at arm's length, filming himself inside
-a warm, modern barbershop. Natural window light, slight handheld feel, genuine
-relaxed smile, looking into the lens. Wearing a black t-shirt and a barber apron.
-Realistic skin texture and pores, no studio polish, candid and real. Background:
-barber chairs, mirrors, a few plants, softly blurred. Shallow depth of field.
+30-year-old female bakery owner holding the phone at arm's length, filming herself
+inside a warm artisan bakery. Soft morning window light, slight handheld feel,
+genuine relaxed smile, looking into the lens. Wearing a flour-dusted apron over a
+simple top. Realistic skin texture and pores, no studio polish, candid and real.
+Background: pastry display case with bread and croissants, wooden counter, softly
+blurred. Shallow depth of field.
 ```
 **Négatif / à éviter :** `glossy CGI, plastic skin, studio lighting, model pose, watermark, text`
 
 ### Variantes de décor (au choix, garder le même type de perso)
-- **Boulangerie :** `...30-year-old female bakery owner, flour-dusted apron, warm pastry display blurred behind, morning light...`
+- **Barbier :** `...30-year-old male barber, black t-shirt + barber apron, barber chairs and mirrors blurred behind...`
 - **Salon de coiffure :** `...salon owner, styling chairs and mirrors behind, bright modern interior...`
 
 ---
