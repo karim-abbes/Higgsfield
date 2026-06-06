@@ -53,16 +53,18 @@ CONCAT="$TMP_DIR/concat.txt"
 echo "🧩 Concaténation…"
 ffmpeg -y -loglevel error -f concat -safe 0 -i "$CONCAT" -c copy "$TMP_DIR/merged.mp4"
 
-# Sous-titres (optionnel).
-if [[ -f "assets/subtitles.srt" ]]; then
-  cp assets/subtitles.srt "$TMP_DIR/subtitles.srt"
-  echo "💬 Incrustation des sous-titres…"
-  ffmpeg -y -loglevel error -i "$TMP_DIR/merged.mp4" \
-    -vf "subtitles=$TMP_DIR/subtitles.srt:force_style='Fontname=Arial Black,Fontsize=14,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=120'" \
-    -c:a copy "$FINAL"
+# Sous-titres : auto-générés depuis l'audio réel (Whisper) = toujours synchros.
+if [[ -n "${FAL_KEY:-}" ]]; then
+  echo "💬 Sous-titres auto (Whisper, synchro sur la voix réelle)…"
+  if python3 scripts/autosubtitle.py "$TMP_DIR/merged.mp4" "$FINAL" "out/subtitles_auto.srt"; then
+    :
+  else
+    echo "⚠️  Auto-sous-titres échoués → vidéo sans sous-titres."
+    cp "$TMP_DIR/merged.mp4" "$FINAL"
+  fi
 else
   cp "$TMP_DIR/merged.mp4" "$FINAL"
-  echo "ℹ️  Pas de assets/subtitles.srt — vidéo copiée telle quelle."
+  echo "ℹ️  FAL_KEY absent — pas de sous-titres auto. (export FAL_KEY pour les activer.)"
 fi
 
 rm -rf "$TMP_DIR"
