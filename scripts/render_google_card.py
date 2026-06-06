@@ -44,10 +44,28 @@ FIELDS = ",".join([
 ])
 
 
+def load_dotenv() -> None:
+    """Charge .env (racine du repo) dans l'environnement, sans écraser l'existant."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(root, ".env")
+    if not os.path.exists(path):
+        return
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            os.environ.setdefault(key, val)
+
+
 def api_key() -> str:
+    load_dotenv()
     k = os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GOOGLE_PLACES_API_KEY")
     if not k:
-        sys.exit("❌ Manque GOOGLE_MAPS_API_KEY.")
+        sys.exit("❌ Manque GOOGLE_MAPS_API_KEY (ni env ni .env).")
     return k.strip()
 
 
