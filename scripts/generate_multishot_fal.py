@@ -41,26 +41,27 @@ SHOTS = [
         "index": 1,
         "duration": "2",
         "prompt": (
-            "9:16 vertical UGC selfie. The bakery owner from the reference image holds her "
-            "phone at arm's length, smiling at camera. She says: "
-            "'Your customers Google you every day...'"
+            "Take @Element1 as the subject. 9:16 vertical UGC selfie of the bakery owner, "
+            "holding her phone at arm's length inside her warm bakery, smiling at camera, "
+            "friendly UGC creator energy. She says: 'Your customers Google you every day...'"
         ),
     },
     {
         "index": 2,
         "duration": "3",
         "prompt": (
-            "Cut to a 9:16 phone screen showing a basic Google Business Profile. "
-            "Subtle zoom. Same voice continues: '...but find nothing. Just a map pin.'"
+            "Hard cut to @Image1: a 9:16 phone screen showing a basic Google Business Profile "
+            "listing for a bakery, subtle zoom. Same voice continues: "
+            "'...but find nothing. Just a map pin.'"
         ),
     },
     {
         "index": 3,
         "duration": "5",
         "prompt": (
-            "UI reveal: the Google profile morphs into a clean, professional bakery website. "
-            "Same voice: 'Bunua turns your Google profile into a real website. In five minutes. "
-            "No signup, no card.'"
+            "Smooth UI reveal: @Image1 morphs into @Image2, a clean professional bakery website "
+            "on a phone screen. Same voice: 'Bunua turns your Google profile into a real "
+            "website. In five minutes. No signup, no card.'"
         ),
     },
 ]
@@ -85,16 +86,21 @@ def main() -> int:
 
     print("🎬 Multi-shot Kling Omni (3 plans, voix unique) via fal.ai…")
     avatar_url = upload(AVATAR)
-    google_url = upload(GOOGLE)
-    bunua_url = upload(BUNUA)
+    google_url = upload(GOOGLE)   # @Image1 dans les prompts
+    bunua_url = upload(BUNUA)     # @Image2 dans les prompts
 
     result = fal_client.subscribe(
         MODEL,
         arguments={
+            # Image de départ obligatoire (= 1ère frame de la vidéo).
             "image_url": avatar_url,
-            "end_image_url": bunua_url,
-            "reference_image_urls": [google_url],
+            # Avatar comme "Element1" → continuité du personnage entre les plans (@Element1).
+            "elements": [{"frontal_image_url": avatar_url}],
+            # Écrans Google (@Image1) puis Bunua (@Image2) en références.
+            "reference_image_urls": [google_url, bunua_url],
+            # Multi-shot (3 plans) + shot_type requis.
             "multi_prompt": SHOTS,
+            "shot_type": "customize",
             "aspect_ratio": "9:16",
             "generate_audio": True,
         },
