@@ -48,7 +48,7 @@ def api_key() -> str:
     k = os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GOOGLE_PLACES_API_KEY")
     if not k:
         sys.exit("❌ Manque GOOGLE_MAPS_API_KEY.")
-    return k
+    return k.strip()
 
 
 def search_place(query: str, key: str) -> dict:
