@@ -13,7 +13,7 @@
 set -euo pipefail
 
 MODEL="veo3"
-IMAGE="out/bunua_avatar_bakery.png"
+IMAGE="out/images/avatar.png"
 
 # Réplique du beat courant (Hook par défaut). Voir brief/higgsfield-prompts.md (Étape B).
 LINE="POV: you run a local business... but you still don't have a website."

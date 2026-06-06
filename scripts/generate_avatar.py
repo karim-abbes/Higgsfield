@@ -41,7 +41,7 @@ CANDIDATE_MODELS = [
     "seedream_v4_5",       # Seedream 4.5
 ]
 
-OUTPUT = "out/bunua_avatar_bakery.png"
+OUTPUT = "out/images/avatar.png"
 
 
 def extract_url(result) -> str | None:
@@ -89,7 +89,7 @@ def main() -> int:
             return 2
 
         print(f"✅ Image générée : {url}")
-        os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
+        os.makedirs("out/images", exist_ok=True)
         urllib.request.urlretrieve(url, OUTPUT)
         print(f"💾 Sauvegardée → {OUTPUT}")
         print("\n➡️ Étape suivante : faire parler cet avatar via Speak (voix off Étape B du brief).")

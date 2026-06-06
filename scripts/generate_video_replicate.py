@@ -27,7 +27,7 @@ import urllib.request
 import replicate
 
 MODEL = "kwaivgi/kling-v3-video"
-AVATAR = os.getenv("AVATAR", "out/bunua_avatar_bakery.png")
+AVATAR = os.getenv("AVATAR", "out/images/avatar.png")
 
 # Répliques tête-parlante (la voix est générée nativement par Kling).
 BEATS = {
@@ -82,8 +82,8 @@ def generate(beat: str, line: str) -> None:
         sys.exit(f"❌ Échec [{beat}]. Dernière erreur : {last_err}")
 
     url = str(out[0] if isinstance(out, list) else out)
-    output = f"out/bunua_clip_{beat}.mp4"
-    os.makedirs("out", exist_ok=True)
+    output = f"out/clips/{beat}.mp4"
+    os.makedirs("out/clips", exist_ok=True)
     urllib.request.urlretrieve(url, output)
     print(f"  ✅ {url}\n  💾 {output}")
 

@@ -33,8 +33,8 @@ AVATAR = os.getenv(
     "https://d8j0ntlcm91z4.cloudfront.net/user_3Ekpw753qW7Jcpo6p0fI5hXuZui/"
     "hf_20260606_084508_4ac60231-a8d6-408a-8660-16b289156c13.png",
 )
-GOOGLE = os.getenv("START_IMAGE", "out/google_profile.png")
-BUNUA = os.getenv("END_IMAGE", "out/bunua_site.png")
+GOOGLE = os.getenv("START_IMAGE", "out/images/google_profile.png")
+BUNUA = os.getenv("END_IMAGE", "out/images/bunua_site.png")
 
 SHOTS = [
     {
@@ -66,7 +66,7 @@ SHOTS = [
     },
 ]
 
-OUTPUT = f"out/bunua_clip_multishot_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
+OUTPUT = f"out/archive/multishot_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
 
 
 def upload(path_or_url: str) -> str:
@@ -119,7 +119,7 @@ def main() -> int:
         return 2
 
     print(f"✅ Vidéo générée : {video_url}")
-    os.makedirs("out", exist_ok=True)
+    os.makedirs("out/archive", exist_ok=True)
     urllib.request.urlretrieve(video_url, OUTPUT)
     print(f"💾 Sauvegardée → {OUTPUT}")
     return 0

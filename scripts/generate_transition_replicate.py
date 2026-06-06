@@ -22,8 +22,8 @@ import urllib.request
 import replicate
 
 MODEL = "kwaivgi/kling-v3-video"
-START_IMAGE = os.getenv("START_IMAGE", "out/google_profile.png")
-END_IMAGE = os.getenv("END_IMAGE", "out/bunua_site.png")
+START_IMAGE = os.getenv("START_IMAGE", "out/images/google_profile.png")
+END_IMAGE = os.getenv("END_IMAGE", "out/images/bunua_site.png")
 
 # Narration condensée des beats 2-3-4 (~10s).
 NARRATION = (
@@ -39,7 +39,7 @@ PROMPT = (
     "Voice-over by a friendly young female creator with authentic UGC energy, warm and "
     f"slightly excited tone, saying: '{NARRATION}'. No music."
 )
-OUTPUT = "out/bunua_clip_transition.mp4"
+OUTPUT = "out/archive/transition_legacy.mp4"
 
 
 def img(path: str):
@@ -79,7 +79,7 @@ def main() -> int:
 
     url = str(out[0] if isinstance(out, list) else out)
     print(f"✅ Vidéo générée : {url}")
-    os.makedirs("out", exist_ok=True)
+    os.makedirs("out/archive", exist_ok=True)
     urllib.request.urlretrieve(url, OUTPUT)
     print(f"💾 Sauvegardée → {OUTPUT}")
     return 0

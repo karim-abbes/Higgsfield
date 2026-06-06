@@ -34,12 +34,12 @@ import fal_client
 MODEL_VIDEO = "fal-ai/kling-video/o3/standard/image-to-video"
 MODEL_VOICE = "fal-ai/kling-video/create-voice"
 
-HOOK_CLIP = os.getenv("HOOK_CLIP", "out/bunua_clip_hook.mp4")
-START_IMAGE = os.getenv("START_IMAGE", "out/google_profile.png")
-END_IMAGE = os.getenv("END_IMAGE", "out/bunua_site.png")
+HOOK_CLIP = os.getenv("HOOK_CLIP", "out/clips/hook.mp4")
+START_IMAGE = os.getenv("START_IMAGE", "out/images/google_profile.png")
+END_IMAGE = os.getenv("END_IMAGE", "out/images/bunua_site.png")
 
-VOICE_ID_FILE = "out/voice_id.txt"
-VOICE_SAMPLE = "out/voice_sample.wav"
+VOICE_ID_FILE = "out/voice/voice_id.txt"
+VOICE_SAMPLE = "out/voice/voice_sample.wav"
 
 NARRATION = (
     "Your customers Google you every day, but find nothing. "
@@ -54,7 +54,7 @@ PROMPT = (
     f"<<<voice_1>>> says with friendly, warm UGC creator energy: '{NARRATION}'. No music."
 )
 
-OUTPUT = f"out/bunua_clip_transition_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
+OUTPUT = f"out/clips/transition_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
 
 
 def upload(path: str) -> str:
@@ -110,7 +110,7 @@ def get_or_create_voice_id() -> str:
     if not voice_id:
         sys.exit(f"❌ Pas de voice_id dans la réponse : {str(result)[:400]}")
 
-    os.makedirs("out", exist_ok=True)
+    os.makedirs(os.path.dirname(VOICE_ID_FILE), exist_ok=True)
     with open(VOICE_ID_FILE, "w") as f:
         f.write(voice_id)
     print(f"✅ voice_id sauvegardé → {VOICE_ID_FILE} ({voice_id})")
@@ -165,11 +165,11 @@ def main() -> int:
         return 2
 
     print(f"✅ {time.time()-start:.1f}s — {video_url}")
-    os.makedirs("out", exist_ok=True)
+    os.makedirs("out/clips", exist_ok=True)
     urllib.request.urlretrieve(video_url, OUTPUT)
     print(f"💾 {OUTPUT}")
     print(f"\n👉 Pour le montage :")
-    print(f"   cp {OUTPUT} out/bunua_clip_transition.mp4")
+    print(f"   cp {OUTPUT} out/clips/transition.mp4")
     print( "   bash scripts/assemble_video.sh")
     return 0
 
