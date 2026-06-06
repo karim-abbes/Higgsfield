@@ -136,8 +136,8 @@ def get_or_create_embedding() -> str:
     else:
         sys.exit(f"❌ Aucun champ d'audio accepté pour le clonage : {last_err}")
 
-    embed_url = first_url(result, "speaker_embedding_url", "embedding_url",
-                          "voice_url", "audio", "output", "url")
+    embed_url = first_url(result, "speaker_embedding", "speaker_embedding_url",
+                          "embedding_url", "voice_url", "audio", "output", "url")
     if not embed_url:
         sys.exit(f"❌ Pas d'URL d'empreinte dans la réponse : {str(result)[:400]}")
 

@@ -120,8 +120,9 @@ Prend un échantillon audio (3-30s, single voice, propre). Sort une **empreinte 
 result = fal_client.subscribe("fal-ai/qwen-3-tts/clone-voice/1.7b", {
     "audio_url": "<url wav/mp3>",
 })
-# Champs de sortie observés (essayer dans cet ordre) :
-embed_url = first_url(result, "speaker_embedding_url", "embedding_url", "voice_url")
+# Sortie réelle vérifiée :
+# {"speaker_embedding": {"url": "...safetensors", "content_type": "...", ...}}
+embed_url = result["speaker_embedding"]["url"]
 ```
 
 Variantes : `0.6b` (plus rapide, moins qualité).
