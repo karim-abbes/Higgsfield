@@ -218,11 +218,16 @@ def generate_silent_video() -> str:
 # --- Étape 5 : mux ---
 def mux(video: str, audio: str) -> str:
     print(f"\n🔗 Mux vidéo + voix clonée…")
-    # -shortest : si l'audio est plus court que la vidéo, la vidéo est coupée à la fin de l'audio.
+    # La narration peut être + longue que la vidéo (10s) → on GÈLE la dernière image
+    # (tpad clone) pour laisser l'audio finir ("...no card"). -shortest coupe ensuite
+    # à la fin de l'audio. Résultat : le site Bunua reste affiché jusqu'au bout.
     subprocess.run(
         ["ffmpeg", "-y", "-loglevel", "error",
          "-i", video, "-i", audio,
-         "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+         "-filter_complex", "[0:v]tpad=stop_mode=clone:stop_duration=10[v]",
+         "-map", "[v]", "-map", "1:a",
+         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
+         "-c:a", "aac", "-b:a", "192k",
          "-shortest", OUTPUT],
         check=True,
     )
