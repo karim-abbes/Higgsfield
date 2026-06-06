@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 """
-Transition "AVANT / APRÈS" : anime le passage de la FICHE GOOGLE au SITE BUNUA
-via Kling 3.0 (start_image -> end_image) sur Replicate.
+Transition PARLANTE qui couvre les beats 2-3-4 du brief (problème → solution → preuve).
+Anime la fiche Google → site Bunua via Kling 3.0 (start/end image), avec voix off
+native générée par Kling (même direction que le hook pour la continuité).
 
-Idée : start = capture de la fiche Google Business, end = capture du site bunua.com
-généré pour ce même business. Kling interpole → reveal satisfaisant.
-(Pas de voix ici : la voix off vient des clips avatar / du montage. generate_audio=False = moins cher.)
+⚠️ Kling ne clone PAS la voix du hook — il en génère une nouvelle à chaque appel.
+La voix sera proche (même direction de prompt) mais peut varier légèrement.
 
 Usage :
     export REPLICATE_API_TOKEN="r8_..."
-    export START_IMAGE="https://.../google_profile.png"   # ou chemin local
-    export END_IMAGE="https://.../bunua_site.png"          # ou chemin local
+    export START_IMAGE="out/google_profile.png"
+    export END_IMAGE="out/bunua_site.png"
     python3 scripts/generate_transition_replicate.py
-
-⚠️ Le morph IA d'écrans d'UI peut être imparfait. Si le rendu "bave", préfère une
-transition propre au montage (wipe/zoom) sur les 2 captures — voir le README.
 """
 from __future__ import annotations
 
@@ -28,10 +25,19 @@ MODEL = "kwaivgi/kling-v3-video"
 START_IMAGE = os.getenv("START_IMAGE", "out/google_profile.png")
 END_IMAGE = os.getenv("END_IMAGE", "out/bunua_site.png")
 
+# Narration condensée des beats 2-3-4 (~10s).
+NARRATION = (
+    "Your customers Google you every day, but find nothing. "
+    "Bunua turns your Google profile into a real website. "
+    "In five minutes. No signup, no card."
+)
+
 PROMPT = (
-    "Smooth satisfying UI reveal on a vertical phone screen: a basic Google Business "
-    "Profile listing transforms into a clean, professional bakery website. Subtle zoom, "
-    "modern and polished, seamless transition, 9:16 phone screen, no extra text overlay."
+    "9:16 vertical phone screen. Smooth satisfying UI reveal: a basic Google Business "
+    "Profile listing slowly transforms into a clean, professional bakery website. "
+    "Subtle zoom and modern polish, seamless transition. "
+    "Voice-over by a friendly young female creator with authentic UGC energy, warm and "
+    f"slightly excited tone, saying: '{NARRATION}'. No music."
 )
 OUTPUT = "out/bunua_clip_transition.mp4"
 
@@ -41,7 +47,7 @@ def img(path: str):
         return path
     if os.path.exists(path):
         return open(path, "rb")
-    sys.exit(f"❌ Image introuvable : {path} (URL ou chemin local valide).")
+    sys.exit(f"❌ Image introuvable : {path}")
 
 
 def main() -> int:
@@ -49,9 +55,8 @@ def main() -> int:
         print("❌ Manque REPLICATE_API_TOKEN.")
         return 1
 
-    print("🎬 Transition avant/après (fiche Google → site bunua)…")
+    print("🎬 Transition PARLANTE (Google → Bunua + narration beats 2-3-4)…")
     last_err = None
-    # Noms de champs variables selon la version : on tente les 2 conventions.
     for s_key, e_key in (("start_image", "end_image"), ("start_image_url", "end_image_url")):
         try:
             out = replicate.run(
@@ -60,9 +65,9 @@ def main() -> int:
                     "prompt": PROMPT,
                     s_key: img(START_IMAGE),
                     e_key: img(END_IMAGE),
-                    "duration": 5,
+                    "duration": 10,
                     "aspect_ratio": "9:16",
-                    "generate_audio": False,
+                    "generate_audio": True,
                 },
             )
             break
