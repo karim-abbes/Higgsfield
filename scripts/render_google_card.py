@@ -27,6 +27,7 @@ import base64
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 API = "https://places.googleapis.com/v1/places:searchText"
