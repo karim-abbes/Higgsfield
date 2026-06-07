@@ -135,12 +135,25 @@ def card_segment(card: str, audios: list[str], circle: str | None, out: str, tmp
          "-map", "0:v", "-map", "1:a", "-shortest", *VENC, *AENC, out])
 
 
+def dims(path: str) -> tuple[int, int]:
+    out = subprocess.run([FP, "-v", "error", "-select_streams", "v:0",
+                          "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", path],
+                         capture_output=True, text=True)
+    w, h = out.stdout.strip().split("x")
+    return int(w), int(h)
+
+
 def site_scroll_segment(site_full: str, audios: list[str], out: str, tmp: str) -> None:
     """Site Bunua DYNAMIQUE : scroll vertical d'un screenshot pleine page pendant la
-    voix kicker (si l'image est plus haute que l'écran ; sinon plan fixe en haut)."""
+    voix kicker. Vitesse CONFORTABLE (px/s) → on ne parcourt pas toute la page d'un
+    coup ; tunable via SCROLL_SPEED (px/s)."""
     ca = f"{tmp}/site_audio.m4a"
     total = audio_concat(audios, ca)
-    y = f"'min(max((ih-{H})*t/{total}\\,0)\\,ih-{H})'"
+    iw, ih = dims(site_full)
+    scaled_h = round(ih * W / iw)               # hauteur après scale à 1080 de large
+    speed = int(os.getenv("SCROLL_SPEED", "220"))  # px/s à l'écran final
+    scroll_dist = max(0, min(scaled_h - H, int(speed * total)))
+    y = f"'min({scroll_dist}*t/{total}\\,{scroll_dist})'"
     run([FF, "-y", "-loglevel", "error", "-loop", "1", "-i", site_full, "-i", ca,
          "-filter_complex",
          f"[0:v]scale={W}:-1,crop={W}:{H}:0:{y},fps={FPS},setsar=1[v]",

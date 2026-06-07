@@ -61,19 +61,20 @@ def main() -> int:
         time.sleep(args.wait)
 
         # Beaucoup de sites révèlent leurs sections AU SCROLL (animations / lazy-load).
-        # On défile jusqu'en bas pour tout déclencher, puis on remonte → capture pleine.
+        # On défile LENTEMENT jusqu'en bas pour tout déclencher, puis on remonte.
         page.evaluate("""async () => {
-            await new Promise((resolve) => {
-                let y = 0; const dy = 350;
-                const t = setInterval(() => {
-                    window.scrollBy(0, dy); y += dy;
-                    if (y >= document.body.scrollHeight) { clearInterval(t); resolve(); }
-                }, 120);
-            });
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+            let y = 0;
+            const dy = 250;
+            for (let i = 0; i < 200; i++) {
+                window.scrollBy(0, dy); y += dy;
+                await sleep(250);
+                if (y >= document.body.scrollHeight) break;
+            }
         }""")
-        page.wait_for_timeout(1200)
+        page.wait_for_timeout(1500)
         page.evaluate("window.scrollTo(0, 0)")
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(700)
 
         page.screenshot(path=args.out, full_page=args.full_page)
         browser.close()
