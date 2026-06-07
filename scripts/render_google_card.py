@@ -42,6 +42,7 @@ FIELDS = ",".join([
     "places.regularOpeningHours",
     "places.websiteUri",
     "places.photos",
+    "places.addressComponents",
 ])
 
 

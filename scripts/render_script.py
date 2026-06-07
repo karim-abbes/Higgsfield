@@ -41,11 +41,13 @@ WORDS_PER_SEC = 2.6
 TEMPLATES = {
     "en": {
         # 4 hooks à A/B tester (beat 1). "A" nécessite des avis (fallback sinon).
+        # Ville incluse (perso légère) mais PAS le nom complet (long/maladroit à dire,
+        # TTS l'écorche, et nom+ville peut se contredire). Le nom reste dans 'stakes'.
         "hooks": {
-            "A": "This {trade} has a {rating}-star rating from {reviews} reviews… and no website.",
-            "B": "We're giving local {trade}s a free website they never asked for. Today: {name}.",
-            "C": "If you own a {trade} and THIS is your Google page, we need to talk.",
-            "D": "Can we build {name} a real website in sixty seconds? Watch.",
+            "A": "This {trade}{in_city} has a {rating}-star rating from {reviews} reviews… and no website.",
+            "B": "We're giving {city_or_local} {trade}s a free website they never asked for.",
+            "C": "If you own a {trade}{in_city} and THIS is your Google page, we need to talk.",
+            "D": "Can we build this {city_or_local} {trade} a real website in sixty seconds? Watch.",
         },
         "stakes": "Every customer who Googles {name} hits a dead end. That's calls walking straight out the door.",
         "setup":  "So at Bunua, we built them one. Watch this.",
@@ -78,20 +80,35 @@ def slugify(name: str) -> str:
     return s or "business"
 
 
+def _city(place: dict) -> str:
+    """Ville fiable via les composants d'adresse Places (locality), avec replis."""
+    comps = place.get("addressComponents") or []
+    for want in ("locality", "postal_town", "administrative_area_level_2"):
+        for c in comps:
+            if want in (c.get("types") or []):
+                return c.get("longText") or c.get("shortText") or ""
+    # Repli : avant-avant-dernier segment ("rue, Ville, État ZIP, Pays").
+    parts = [p.strip() for p in (place.get("formattedAddress") or "").split(",") if p.strip()]
+    return parts[-3] if len(parts) >= 3 else (parts[0] if parts else "")
+
+
 def build_slots(place: dict) -> dict:
     """Extrait les slots depuis l'objet Places (mêmes champs que la carte)."""
     name = (place.get("displayName") or {}).get("text", "this business")
     trade = (place.get("primaryTypeDisplayName") or {}).get("text", "business").lower()
     rating = place.get("rating")
     count = place.get("userRatingCount")
-    # Ville : avant-dernier segment de l'adresse formatée ("…, Sevran, France").
-    parts = [p.strip() for p in (place.get("formattedAddress") or "").split(",") if p.strip()]
-    city = parts[-2] if len(parts) >= 2 else (parts[0] if parts else "")
+    city = _city(place)
     slug = slugify(name)
+    # Slots dérivés pour une insertion propre de la ville (sans phrase bancale si absente).
+    in_city = f" in {city}" if city else ""
+    city_or_local = city if city else "local"
     return {
         "name": name,
         "trade": trade,
         "city": city,
+        "in_city": in_city,
+        "city_or_local": city_or_local,
         "rating": f"{rating:.1f}" if isinstance(rating, (int, float)) else None,
         "reviews": f"{count:,}" if isinstance(count, int) else None,
         "url": f"bunua.com/{slug}",
