@@ -59,7 +59,9 @@ def load_dotenv() -> None:
             key, _, val = line.partition("=")
             key = key.strip()
             val = val.strip().strip('"').strip("'")
-            os.environ.setdefault(key, val)
+            # Le .env du projet fait autorité : il écrase une éventuelle variable
+            # shell (ex: clé Bunua exportée dans ~/.zshrc) pour éviter les surprises.
+            os.environ[key] = val
 
 
 def api_key() -> str:
