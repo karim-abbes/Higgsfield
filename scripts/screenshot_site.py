@@ -28,6 +28,8 @@ def main() -> int:
     ap.add_argument("--out", default="out/images/bunua_site.png")
     ap.add_argument("--full-page", action="store_true",
                     help="Capture toute la page (sinon juste l'écran 1080×1920 = above the fold)")
+    ap.add_argument("--desktop", action="store_true",
+                    help="Force le layout ordinateur (par défaut : MOBILE, recommandé pour le reveal 9:16)")
     ap.add_argument("--wait", type=float, default=2.5,
                     help="Secondes d'attente après chargement (animations/lazy-load)")
     args = ap.parse_args()
@@ -36,11 +38,25 @@ def main() -> int:
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     exe = _chromium_executable()
 
+    # MOBILE par défaut : 360×640 CSS ×3 = 1080×1920, UA mobile + isMobile → le site
+    # sert sa version mobile (cohérent avec la fiche Google mobile du "avant").
+    if args.desktop:
+        ctx_args = {"viewport": {"width": 1080, "height": 1920}, "device_scale_factor": 1}
+    else:
+        ctx_args = {
+            "viewport": {"width": 360, "height": 640},
+            "device_scale_factor": 3,
+            "is_mobile": True,
+            "has_touch": True,
+            "user_agent": ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+                           "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"),
+        }
+
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=exe) if exe else p.chromium.launch()
-        page = browser.new_page(viewport={"width": 1080, "height": 1920},
-                                device_scale_factor=1)
-        print(f"🌐 Chargement : {args.url}")
+        context = browser.new_context(**ctx_args)
+        page = context.new_page()
+        print(f"🌐 Chargement ({'desktop' if args.desktop else 'mobile'}) : {args.url}")
         page.goto(args.url, wait_until="networkidle", timeout=60000)
         time.sleep(args.wait)
         page.screenshot(path=args.out, full_page=args.full_page)
