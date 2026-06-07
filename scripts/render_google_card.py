@@ -158,7 +158,7 @@ def _action(name: str, label: str, primary: bool = False) -> str:
     return f'<div class="{cls}"><div class="ic">{icon}</div><div class="lbl">{label}</div></div>'
 
 
-def build_html(place: dict, photo_uri: str | None, website_device: str = "highlight") -> str:
+def build_html(place: dict, photo_uri: str | None, website_device: str = "absent") -> str:
     name = (place.get("displayName") or {}).get("text", "Local Business")
     rating = place.get("rating")
     count = place.get("userRatingCount")
@@ -276,9 +276,10 @@ def main() -> int:
     ap.add_argument("--place-id", help="place_id direct (sinon recherche par nom)")
     ap.add_argument("--out", default="out/images/google_profile.png")
     ap.add_argument("--website-device", choices=["highlight", "absent", "addsite"],
-                    default="highlight",
-                    help="Sans site : highlight=bouton rouge (device), absent=rien (réaliste), "
-                         "addsite='Add website' grisé (vue proprio)")
+                    default="absent",
+                    help="Sans site : absent=rien (réaliste, défaut), highlight=bouton rouge, "
+                         "addsite='Add website' grisé (vue proprio). Le cercle d'attention "
+                         "se met en overlay au montage, pas dans la carte.")
     ap.add_argument("--html-only", action="store_true", help="Écrit le HTML sans screenshot (debug)")
     args = ap.parse_args()
 
