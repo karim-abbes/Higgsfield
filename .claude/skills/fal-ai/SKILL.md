@@ -140,7 +140,13 @@ audio_url = first_url(result, "audio", "audio_url")
 Alternative : `voice` (voix prédéfinie) au lieu de l'embedding.
 
 ### `fal-ai/qwen-3-tts/voice-design/1.7b`
-Crée une voix à partir d'une description texte (« young friendly female bakery owner »). Alternative au clonage si tu n'as pas de sample.
+Crée une voix à partir d'une description. ⚠️ **Exige DEUX champs** : `prompt`
+(la description de la voix) **ET** `text` (une phrase d'exemple à dire). Passer un
+seul → 422 `Field required`. Sortie : audio (et/ou embedding) ; si seulement un
+audio, le **cloner** (clone-voice) pour obtenir une empreinte réutilisable.
+```python
+fal_client.subscribe(M_DESIGN, {"prompt": "<description voix>", "text": "<phrase exemple>"})
+```
 
 ---
 
@@ -157,15 +163,19 @@ HuggingFace `Wan-AI/Wan2.2-S2V-14B`) → candidat pour pipeline local sur RTX 40
 result = fal_client.subscribe("fal-ai/wan/v2.2-14b/speech-to-video", {
     "image_url": "<url avatar>",
     "audio_url": "<url audio qui pilote le lip-sync>",
+    "prompt": "<description scène/action>",  # ⚠️ REQUIS (422 'Field required' sinon)
     "resolution": "580p",   # ou "720p"
 })
 video_url = result["video"]["url"]
 ```
 
-Aussi sur Replicate : `wan-video/wan-2.2-s2v` (inputs `image_url`, `audio_url`, `resolution`).
+⚠️⚠️ **VERDICT projet : Wan S2V ÉCARTÉ.** Testé sur notre avatar → **lip-sync décroché**
+(pas synchro, moins naturel que Kling vidéo+voix). Et **lent sur fal** (>10 min,
+305s d'inférence observés). Pour la vidéo parlante : **Kling vidéo+voix sur Replicate**
+(hook/CTA) puis **voix clonée** sur la transition. Garder Wan seulement comme piste
+si on trouve un modèle de lip-sync nettement meilleur (ex: lipsync dédié).
 
-⚠️ Wan ne génère PAS la voix → on lui fournit un audio (TTS Qwen3 cloné). Avantage :
-règle définitivement le problème de cohérence de voix entre clips.
+Aussi sur Replicate : `wan-video/wan-2.2-s2v` (inputs `image_url`, `audio_url`, `resolution`).
 
 ---
 
