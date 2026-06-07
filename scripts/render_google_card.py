@@ -102,9 +102,12 @@ def fetch_photo_data_uri(place: dict, key: str) -> str | None:
     name = photos[0].get("name")  # ex: places/XXX/photos/YYY
     if not name:
         return None
-    url = f"https://places.googleapis.com/v1/{name}/media?maxWidthPx=900&key={key}"
+    # Auth par en-tête (comme searchText) plutôt que ?key= dans l'URL : certaines
+    # restrictions de clé refusent la clé en query param mais acceptent l'en-tête.
+    url = f"https://places.googleapis.com/v1/{name}/media?maxWidthPx=900"
     try:
-        with urllib.request.urlopen(url, timeout=30) as r:
+        req = urllib.request.Request(url, headers={"X-Goog-Api-Key": key})
+        with urllib.request.urlopen(req, timeout=30) as r:
             raw = r.read()
             ctype = r.headers.get("Content-Type", "image/jpeg")
         return f"data:{ctype};base64," + base64.b64encode(raw).decode()
@@ -259,11 +262,24 @@ def build_html(place: dict, photo_uri: str | None, website_device: str = "absent
 </body></html>"""
 
 
+def _chromium_executable() -> str | None:
+    """Chromium à utiliser. Permet de réutiliser un binaire déjà présent dans un
+    environnement restreint (sans accès au CDN Playwright). None = laisser
+    Playwright trouver le sien (cas normal en local)."""
+    import glob
+    env = os.getenv("PLAYWRIGHT_CHROMIUM_PATH")
+    if env and os.path.exists(env):
+        return env
+    hits = sorted(glob.glob("/opt/pw-browsers/chromium-*/chrome-linux/chrome"))
+    return hits[-1] if hits else None
+
+
 def render(html: str, out: str) -> None:
     from playwright.sync_api import sync_playwright
     os.makedirs(os.path.dirname(out), exist_ok=True)
+    exe = _chromium_executable()
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(executable_path=exe) if exe else p.chromium.launch()
         page = browser.new_page(viewport={"width": 1080, "height": 1920})
         page.set_content(html, wait_until="load")
         page.screenshot(path=out)
