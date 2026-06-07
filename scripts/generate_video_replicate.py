@@ -54,25 +54,32 @@ def build_prompt(line: str) -> str:
 
 
 def image_input():
-    """Replicate accepte une URL (str) ou un fichier uploadé."""
+    """Préfère une URL (Replicate la récupère côté serveur → pas d'upload, pas de timeout).
+    Ordre : AVATAR si c'est une URL > fichier <AVATAR>.url.txt > fichier local."""
     if AVATAR.startswith("http"):
         return AVATAR
+    url_file = AVATAR + ".url.txt"
+    if os.path.exists(url_file):
+        u = open(url_file).read().strip()
+        if u.startswith("http"):
+            return u
     if os.path.exists(AVATAR):
         return open(AVATAR, "rb")
-    sys.exit(f"❌ Avatar introuvable : {AVATAR} (mets une URL ou un chemin local valide).")
+    sys.exit(f"❌ Avatar introuvable : {AVATAR} (URL, .url.txt ou chemin local).")
 
 
 def generate(beat: str, line: str) -> None:
     print(f"\n🎬 [{beat}] {line!r}")
+    # start_image = champ qui ANCRE l'identité (le visage de notre avatar). On ne
+    # retombe PLUS sur 'image' (qui ignore l'avatar et fabrique un faux visage).
     last_err = None
-    # Le nom du champ image varie selon les versions : on tente start_image puis image.
-    for image_param in ("start_image", "image"):
+    for attempt in range(1, 4):
         try:
             out = replicate.run(
                 MODEL,
                 input={
                     "prompt": build_prompt(line),
-                    image_param: image_input(),
+                    "start_image": image_input(),
                     "duration": 5,
                     "aspect_ratio": "9:16",
                     "generate_audio": True,
@@ -80,10 +87,10 @@ def generate(beat: str, line: str) -> None:
             )
             break
         except Exception as e:  # noqa: BLE001
-            print(f"  · champ '{image_param}' refusé ({e})")
+            print(f"  · tentative {attempt}/3 échouée ({e})")
             last_err = e
     else:
-        sys.exit(f"❌ Échec [{beat}]. Dernière erreur : {last_err}")
+        sys.exit(f"❌ Échec [{beat}] après 3 tentatives : {last_err}")
 
     url = str(out[0] if isinstance(out, list) else out)
     output = f"out/clips/{beat}.mp4"

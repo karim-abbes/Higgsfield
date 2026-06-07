@@ -113,7 +113,11 @@ def main() -> int:
         print(f"✅ Image générée : {url}")
         os.makedirs(os.path.dirname(args.out), exist_ok=True)
         urllib.request.urlretrieve(url, args.out)
-        print(f"💾 Sauvegardée → {args.out}")
+        # Persiste l'URL source : permet aux étapes suivantes (Kling/Replicate) de
+        # passer l'image PAR URL (récup côté serveur) au lieu de l'uploader → pas de timeout.
+        with open(args.out + ".url.txt", "w") as f:
+            f.write(url)
+        print(f"💾 Sauvegardée → {args.out}  (+ URL → {args.out}.url.txt)")
         print("\n➡️ Étape suivante : test Wan S2V (avatar + un MP3 TTS → avatar parlant).")
         return 0
 
