@@ -57,3 +57,10 @@
 1. Entrée : objet Place (Places API) → slots.
 2. Sort : script segmenté par beat (texte hôte vs voix off) + cues montage.
 3. → TTS (voix off + lignes hôte) → clips (hook/CTA caméra + reveal) → montage + sous-titres.
+
+## Évolution prévue — script écrit par IA (originalité par vidéo)
+Aujourd'hui : template + slots (fiable, gratuit, mais vidéos trop semblables à l'échelle).
+**Cible** : couche **Claude API** qui écrit un script **unique par commerce** (angle/accroche/ton
+variés) en respectant la structure (6 beats, durées, règles : commerce héros, hôte intro/outro
++ voix off, CTA). Le template reste en **fallback**. But : éviter la fatigue algo/audience,
+maximiser l'originalité. (À brancher après l'orchestrateur ; voir option « hybride template+IA ».)
