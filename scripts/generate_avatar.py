@@ -22,6 +22,22 @@ import urllib.request
 
 import higgsfield_client
 
+
+def load_dotenv() -> None:
+    """Charge .env (racine du repo) dans l'environnement, sans écraser l'existant."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(root, ".env")
+    if not os.path.exists(path):
+        return
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
+
+
 # --- Prompt avatar (Étape A du brief) ---
 AVATAR_PROMPT = (
     "Vertical 9:16 UGC selfie photo, authentic iPhone front-camera look. A friendly "
@@ -59,6 +75,7 @@ def extract_url(result) -> str | None:
 
 
 def main() -> int:
+    load_dotenv()
     if not (os.getenv("HF_KEY") or (os.getenv("HF_API_KEY") and os.getenv("HF_API_SECRET"))):
         print('❌ Manque les identifiants. Exporte HF_KEY="key:secret" (voir .env.example).')
         return 1
