@@ -125,7 +125,11 @@ def main() -> int:
     step("transition", trans, [PY, "scripts/generate_transition_fal.py",
                                "--start", card, "--end", site, "--out", trans, "--duration", "5", *force_flag])
 
-    # 8) Montage final + sous-titres.
+    # 8) Montage final + sous-titres. Si une étape AMONT a (re)tourné, l'épisode
+    # existant est périmé → on le supprime pour forcer un réassemblage propre.
+    if any(v.get("status") == "run" for v in state.values()) and os.path.exists(episode):
+        os.remove(episode)
+        print(f"\n♻️  Amont modifié → réassemblage forcé ({episode}).")
     step("assemble", episode, [PY, "scripts/assemble_episode.py", script_json,
                                "--card", card, "--site", site, "--clips", clips])
 
