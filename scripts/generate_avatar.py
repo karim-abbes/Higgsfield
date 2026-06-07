@@ -1,45 +1,29 @@
 #!/usr/bin/env python3
 """
-Génère l'avatar UGC Bunua (boulangère, 9:16) via le SDK officiel Higgsfield.
+Génère l'avatar PRÉSENTATEUR du Makeover Reveal Show (host masculin, 9:16).
+
+Pourquoi la CLI et pas le SDK : sur ce compte, `higgsfield_client.subscribe()`
+renvoie "Model not found" pour TOUS les modèles (court ou format long), alors que
+la CLI `higgsfield` fonctionne (cf. `higgsfield model list`). On pilote donc la CLI.
 
 Usage:
-    pip3 install -r scripts/requirements.txt
-    export HF_KEY="your-api-key:your-api-secret"   # voir .env.example
+    higgsfield auth login        # une fois (la CLI doit être authentifiée)
     python3 scripts/generate_avatar.py
+    # modèle au choix : --model nano_banana_2 | seedream_v4_5 | flux_2 …
 
-Le prompt vient de brief/higgsfield-prompts.md (Étape A — BOULANGERIE).
-
-Note: les identifiants de modèles viennent du catalogue officiel
-(https://github.com/higgsfield-ai/cli/blob/main/MODELS.md).
-Le script essaie plusieurs modèles connus et garde le premier qui répond.
+Noms de modèles = ceux de `higgsfield model list` (noms courts).
 """
 from __future__ import annotations  # compat type hints sur Python 3.9 (Mac)
 
+import argparse
 import json
 import os
+import re
+import subprocess
 import sys
 import urllib.request
 
-import higgsfield_client
-
-
-def load_dotenv() -> None:
-    """Charge .env (racine du repo) dans l'environnement, sans écraser l'existant."""
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    path = os.path.join(root, ".env")
-    if not os.path.exists(path):
-        return
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, val = line.partition("=")
-            os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
-
-
-# --- Prompt avatar : PRÉSENTATEUR récurrent du Makeover Reveal Show ---
-# Persona = host énergique masculin (≈ la voix TTS), PAS lié à un commerce.
+# --- Prompt avatar : PRÉSENTATEUR récurrent (host énergique masculin) ---
 AVATAR_PROMPT = (
     "Vertical 9:16 UGC selfie video still, authentic iPhone front-camera look. A "
     "charismatic, energetic 30-year-old American man holding the phone at arm's length, "
@@ -49,73 +33,93 @@ AVATAR_PROMPT = (
     "studio polish. Clean simple modern interior, softly blurred. Shallow depth of field."
 )
 
-# ⚠️ Le SDK Python n'utilise PAS les noms courts du CLI (nano_banana_2…) mais le
-# format "organisation/modèle/version/tâche". Les noms courts → "Model not found".
-# ID confirmé via la doc du client Python (cf. PyPI higgsfield-client).
-# On essaie dans l'ordre ; le 1er modèle qui accepte la requête est utilisé.
-CANDIDATE_MODELS = [
-    "bytedance/seedream/v4/text-to-image",  # Seedream V4 — photoréaliste (confirmé)
-]
+# Noms courts (cf. `higgsfield model list`), photoréalistes, essayés dans l'ordre.
+CANDIDATE_MODELS = ["nano_banana_2", "seedream_v4_5", "flux_2"]
 
 OUTPUT = "out/images/avatar.png"
+IMG_EXT = (".png", ".jpg", ".jpeg", ".webp")
 
 
-def extract_url(result) -> str | None:
-    """Le schéma de sortie varie selon le modèle : on cherche la 1ère URL d'image."""
-    if isinstance(result, dict):
-        if "images" in result and result["images"]:
-            return result["images"][0].get("url")
-        for key in ("image", "url", "output"):
-            v = result.get(key)
-            if isinstance(v, str) and v.startswith("http"):
-                return v
-            if isinstance(v, dict) and isinstance(v.get("url"), str):
-                return v["url"]
-    return None
+def find_image_url(text: str):
+    """Cherche l'URL de l'image dans la sortie CLI : JSON d'abord, sinon regex.
+    Préfère une URL qui ressemble à une image, sinon la 1ère URL http trouvée."""
+    candidates: list[str] = []
+
+    def walk(o):
+        if isinstance(o, str) and o.startswith("http"):
+            candidates.append(o)
+        elif isinstance(o, dict):
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+
+    try:
+        walk(json.loads(text))
+    except Exception:  # noqa: BLE001 — sortie non-JSON → regex
+        candidates = re.findall(r'https?://[^\s"\'<>]+', text)
+
+    if not candidates:
+        return None
+    for u in candidates:
+        if any(ext in u.lower() for ext in IMG_EXT):
+            return u
+    return candidates[0]
+
+
+def generate(model: str) -> str | None:
+    cmd = [
+        "higgsfield", "generate", "create", model,
+        "--prompt", AVATAR_PROMPT,
+        "--aspect_ratio", "9:16",
+        "--resolution", "2k",
+        "--wait", "--json",
+    ]
+    print(f"→ Modèle : {model}")
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+    except FileNotFoundError:
+        sys.exit("❌ CLI 'higgsfield' introuvable dans le PATH. Installe-la / ouvre un shell où elle est dispo.")
+    except subprocess.TimeoutExpired:
+        print("  ⚠️ timeout (>15min)")
+        return None
+
+    out = (proc.stdout or "") + "\n" + (proc.stderr or "")
+    if proc.returncode != 0:
+        print(f"  ✗ échec (code {proc.returncode}) : {out.strip()[:200]}")
+        return None
+
+    url = find_image_url(out)
+    if not url:
+        print(f"  ⚠️ pas d'URL dans la sortie : {out.strip()[:200]}")
+        return None
+    return url
 
 
 def main() -> int:
-    load_dotenv()
-    if not (os.getenv("HF_KEY") or (os.getenv("HF_API_KEY") and os.getenv("HF_API_SECRET"))):
-        print('❌ Manque les identifiants. Exporte HF_KEY="key:secret" (voir .env.example).')
-        return 1
+    ap = argparse.ArgumentParser(description="Génère l'avatar présentateur via la CLI Higgsfield.")
+    ap.add_argument("--model", help="Force un modèle (sinon essaie la liste par défaut)")
+    ap.add_argument("--out", default=OUTPUT, help=f"Chemin de sortie (défaut {OUTPUT})")
+    args = ap.parse_args()
 
     print("🎨 Génération de l'avatar PRÉSENTATEUR (host masculin, 9:16)…\n")
-    last_err = None
-    for model in CANDIDATE_MODELS:
-        print(f"→ Essai du modèle : {model}")
-        try:
-            result = higgsfield_client.subscribe(
-                model,
-                arguments={
-                    "prompt": AVATAR_PROMPT,
-                    "aspect_ratio": "9:16",
-                    "resolution": "2K",      # ⚠️ majuscule (schéma SDK)
-                    "camera_fixed": False,
-                },
-            )
-        except Exception as e:  # noqa: BLE001 — on veut juste passer au modèle suivant
-            print(f"  ✗ {model} indisponible ({e})\n")
-            last_err = e
-            continue
-
-        print(f"  ✓ Réponse reçue de {model}")
-        url = extract_url(result)
+    models = [args.model] if args.model else CANDIDATE_MODELS
+    for model in models:
+        url = generate(model)
         if not url:
-            print("  ⚠️ Pas d'URL trouvée dans la réponse. Structure brute :")
-            print(json.dumps(result, indent=2, default=str)[:1500])
-            return 2
-
+            print()
+            continue
         print(f"✅ Image générée : {url}")
-        os.makedirs("out/images", exist_ok=True)
-        urllib.request.urlretrieve(url, OUTPUT)
-        print(f"💾 Sauvegardée → {OUTPUT}")
-        print("\n➡️ Étape suivante : faire parler cet avatar via Speak (voix off Étape B du brief).")
+        os.makedirs(os.path.dirname(args.out), exist_ok=True)
+        urllib.request.urlretrieve(url, args.out)
+        print(f"💾 Sauvegardée → {args.out}")
+        print("\n➡️ Étape suivante : test Wan S2V (avatar + un MP3 TTS → avatar parlant).")
         return 0
 
-    print(f"\n❌ Aucun modèle n'a fonctionné. Dernière erreur : {last_err}")
-    print("👉 Le SDK veut le format 'org/modèle/version/tâche' (PAS les noms courts du CLI).")
-    print("   Colle la sortie de `higgsfield model list` pour caler les bons IDs.")
+    print("❌ Aucun modèle n'a fonctionné.")
+    print("👉 Vérifie que la CLI est authentifiée (`higgsfield auth login`) et teste à la main :")
+    print('   higgsfield generate create nano_banana_2 --prompt "test" --aspect_ratio 9:16 --wait')
     return 1
 
 
