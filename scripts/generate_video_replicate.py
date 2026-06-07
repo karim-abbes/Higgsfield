@@ -20,31 +20,35 @@ tournent en capture d'écran réelle + voix off, pas ici.
 """
 from __future__ import annotations
 
+import argparse
+import json
 import os
 import sys
 import urllib.request
 
 import replicate
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from render_google_card import load_dotenv  # noqa: E402
+
 MODEL = "kwaivgi/kling-v3-video"
 AVATAR = os.getenv("AVATAR", "out/images/avatar.png")
 
-# Répliques tête-parlante (la voix est générée nativement par Kling).
+# Répliques par défaut (fallback si pas de --script). Le texte réel d'un épisode
+# vient du script JSON (render_script.py) via --script. La voix est générée
+# nativement par Kling, puis clonée pour la voix off de la transition.
 BEATS = {
-    "hook": "POV: you run a local business... but you still don't have a website.",
-    "cta": "If you've been putting it off — go to bunua dot com and search your business. That's it.",
-    # Variantes de hook à A/B tester :
-    "hook_b": "If you own a local shop, this is honestly a cheat code.",
-    "hook_c": "Your customers Google you every day, and find nothing. Let's fix that in five minutes.",
+    "hook": "This local business has hundreds of five-star reviews... and no website.",
+    "cta": "If this is your business, it's already online — link's in bio. Free to try.",
 }
 
 
 def build_prompt(line: str) -> str:
     return (
-        "9:16 vertical selfie UGC video. The same female bakery owner from the image holds "
-        "her phone at arm's length, walking slowly through her warm bakery, talking directly "
-        "to camera with friendly, slightly excited energy. Handheld natural motion. "
-        f"She says: '{line}' "
+        "9:16 vertical selfie UGC video. The same charismatic young man from the image holds "
+        "his phone at arm's length, talking directly to camera with friendly, energetic "
+        "creator energy. Natural handheld motion, expressive face and subtle hand gestures. "
+        f"He says: '{line}' "
         "Authentic creator vibe, natural lighting, real human voice, no on-screen text, no music."
     )
 
@@ -88,22 +92,36 @@ def generate(beat: str, line: str) -> None:
     print(f"  ✅ {url}\n  💾 {output}")
 
 
-def main(argv: list[str]) -> int:
+def line_for(beat: str, script_path: str | None) -> str:
+    """Texte du beat : depuis le script JSON si fourni, sinon le défaut BEATS."""
+    if script_path:
+        with open(script_path) as f:
+            data = json.load(f)
+        for b in data.get("beats", []):
+            if b.get("beat") == beat:
+                return b["text"]
+        sys.exit(f"❌ Beat {beat!r} absent du script {script_path}.")
+    if beat in BEATS:
+        return BEATS[beat]
+    sys.exit(f"❌ Beat inconnu : {beat}. Choix : {', '.join(BEATS)} (ou fournis --script).")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Clips parlants Kling (Replicate) sur l'avatar hôte.")
+    ap.add_argument("beat", nargs="?", default="hook", help="hook | cta | all")
+    ap.add_argument("--script", help="Script JSON (render_script.py) pour le texte exact du beat")
+    args = ap.parse_args()
+
+    load_dotenv()
     if not os.getenv("REPLICATE_API_TOKEN"):
-        print("❌ Manque REPLICATE_API_TOKEN (replicate.com/account/api-tokens).")
+        print("❌ Manque REPLICATE_API_TOKEN (env ou .env).")
         return 1
 
-    target = argv[1] if len(argv) > 1 else "hook"
-    if target == "all":
-        for beat in ("hook", "cta"):
-            generate(beat, BEATS[beat])
-    elif target in BEATS:
-        generate(target, BEATS[target])
-    else:
-        print(f"Beat inconnu : {target}. Choix : {', '.join(BEATS)} ou 'all'.")
-        return 1
+    beats = ("hook", "cta") if args.beat == "all" else (args.beat,)
+    for beat in beats:
+        generate(beat, line_for(beat, args.script))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main())
