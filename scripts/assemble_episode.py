@@ -94,8 +94,9 @@ def audio_concat(audios: list[str], out: str) -> float:
 
 
 def card_segment(card: str, audios: list[str], circle: str | None, out: str, tmp: str) -> None:
-    """Fiche Google DYNAMIQUE : (1) Ken Burns push-in, puis (4) punch-in sur la zone
-    d'actions + (3) cercle rouge fade-in (le bouton site manquant). Durée = voix off."""
+    """Fiche Google DYNAMIQUE, SANS déformation (toujours en 9:16) :
+    (1) Ken Burns push-in, puis (3) cercle rouge (ellipse) fade-in sur la RANGÉE de
+    boutons d'action (Directions/Call/Save/Share → aucun bouton site). Durée = voix off."""
     ca = f"{tmp}/card_audio.m4a"
     total = audio_concat(audios, ca)
     d1 = max(1.0, round(total * 0.55, 2))
@@ -109,18 +110,22 @@ def card_segment(card: str, audios: list[str], circle: str | None, out: str, tmp
          f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={int(d1*FPS)}:s={W}x{H}:fps={FPS},setsar=1[v]",
          "-map", "[v]", "-t", f"{d1}", *VENC, s1])
 
-    # Shot 2 — punch-in sur le bas (actions/contact) + cercle rouge qui apparaît.
-    crop = f"crop={W}:{int(H*0.42)}:0:{int(H*0.50)},scale={W}:{H},fps={FPS},setsar=1"
+    # Shot 2 — fiche ENTIÈRE (pas de crop = pas de déformation) + ellipse rouge qui
+    # apparaît sur la rangée de boutons (≈ 64% de hauteur). Tunable via CIRCLE_Y.
+    cy = int(os.getenv("CIRCLE_Y", "990"))     # haut de l'ellipse (px sur 1920 ; rangée ≈ y1173)
+    cw, ch = 1010, 360                          # ellipse large = englobe les 4 boutons
     if circle and os.path.exists(circle):
         run([FF, "-y", "-loglevel", "error", "-loop", "1", "-t", f"{d2}", "-i", card,
              "-loop", "1", "-t", f"{d2}", "-i", circle,
              "-filter_complex",
-             f"[0:v]{crop}[b];[1:v]format=rgba,fade=in:st=0.2:d=0.5:alpha=1,scale=620:620[r];"
-             f"[b][r]overlay=(W-w)/2:(H-h)/2[v]",
+             f"[0:v]scale={W}:{H},setsar=1,fps={FPS}[b];"
+             f"[1:v]format=rgba,fade=in:st=0.2:d=0.5:alpha=1,scale={cw}:{ch}[r];"
+             f"[b][r]overlay=(W-w)/2:{cy}[v]",
              "-map", "[v]", "-t", f"{d2}", *VENC, s2])
     else:
         run([FF, "-y", "-loglevel", "error", "-loop", "1", "-t", f"{d2}", "-i", card,
-             "-filter_complex", f"[0:v]{crop}[v]", "-map", "[v]", "-t", f"{d2}", *VENC, s2])
+             "-filter_complex", f"[0:v]scale={W}:{H},setsar=1,fps={FPS}[v]",
+             "-map", "[v]", "-t", f"{d2}", *VENC, s2])
 
     cf = f"{tmp}/card_concat.txt"
     with open(cf, "w") as f:
