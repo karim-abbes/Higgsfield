@@ -99,12 +99,28 @@ def clone_to_embedding(audio_ref: str) -> str:
     return embed
 
 
+# Phrase d'exemple lue par la voix conçue (l'endpoint exige `prompt` ET `text`).
+DESIGN_SAMPLE_TEXT = (
+    "Hey — check this out. Your business deserves a real website, "
+    "and I'm about to show you exactly how."
+)
+
+
 def design_to_embedding(description: str) -> str:
     """Conçoit une voix depuis une description → URL d'empreinte.
-    Si l'endpoint ne rend qu'un audio, on le clone pour obtenir l'empreinte."""
+    voice-design exige `prompt` (description) ET `text` (phrase à dire). Si la
+    réponse ne rend qu'un audio, on le clone pour obtenir l'empreinte réutilisable."""
     print(f"🎨 Conception de la voix : « {description[:60]}… »")
-    res = _subscribe_trying(M_DESIGN, {}, ("prompt", "description", "text"),
-                            description, "Voice-design")
+    start = time.time()
+    try:
+        res = fal_client.subscribe(
+            M_DESIGN,
+            arguments={"prompt": description, "text": DESIGN_SAMPLE_TEXT},
+            with_logs=True, on_queue_update=lambda u, s=start: progress(s, u),
+        )
+    except Exception as e:  # noqa: BLE001
+        sys.exit(f"❌ Voice-design a échoué : {type(e).__name__} {e}")
+
     embed = first_url(res, "speaker_embedding", "speaker_embedding_url", "embedding_url")
     if embed:
         return embed
@@ -112,7 +128,7 @@ def design_to_embedding(description: str) -> str:
     if audio:
         print("  · voice-design a rendu un audio → clonage pour l'empreinte")
         return clone_to_embedding(audio)
-    sys.exit(f"❌ Réponse voice-design inattendue : {str(res)[:300]}")
+    sys.exit(f"❌ Réponse voice-design inattendue : {str(res)[:400]}")
 
 
 def resolve_voice(args) -> tuple[dict, str]:
