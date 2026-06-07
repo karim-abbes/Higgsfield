@@ -6,10 +6,12 @@ when-to-use: Génération de clips parlants (hook/CTA) via Kling sur Replicate, 
 
 # Référence Replicate — projet UGC Bunua
 
-## Pourquoi Replicate
-Paiement à l'usage, pas de mur "Pro plan", et **plus fiable/prévisible que fal**
-pour la vidéo (fal a montré >10 min d'attente sur Wan). Auth : `REPLICATE_API_TOKEN`
-(replicate.com/account/api-tokens) dans `.env`. **Charger le `.env`** dans le script.
+## Quand l'utiliser : FALLBACK seulement
+**Par défaut, Kling se fait sur fal.ai** (moins cher ~$0.126/s vs Replicate ~$1.68/clip 5s,
+et rapide). Replicate sert de **fallback**. ⚠️ Le >10 min observé était **Wan S2V**, PAS
+Kling — Kling sur fal est rapide. Voir `scripts/generate_video_fal.py` + `generate_transition_fal.py`.
+Replicate a aussi un **timeout d'upload** récurrent sur les images locales (retries nécessaires).
+Auth : `REPLICATE_API_TOKEN` dans `.env` (charger le `.env`).
 
 ## Modèle clips parlants : `kwaivgi/kling-v3-video`
 Avatar (image) → vidéo parlante, **voix générée nativement par Kling** (~$0.14/s, audio).
