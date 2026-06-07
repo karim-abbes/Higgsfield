@@ -38,23 +38,26 @@ def load_dotenv() -> None:
             os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
 
 
-# --- Prompt avatar (Étape A du brief) ---
+# --- Prompt avatar : PRÉSENTATEUR récurrent du Makeover Reveal Show ---
+# Persona = host énergique masculin (≈ la voix TTS), PAS lié à un commerce.
 AVATAR_PROMPT = (
-    "Vertical 9:16 UGC selfie photo, authentic iPhone front-camera look. A friendly "
-    "30-year-old female bakery owner holding the phone at arm's length, filming herself "
-    "inside a warm artisan bakery. Soft morning window light, slight handheld feel, "
-    "genuine relaxed smile, looking into the lens. Wearing a flour-dusted apron over a "
-    "simple top. Realistic skin texture and pores, no studio polish, candid and real. "
-    "Background: pastry display case with bread and croissants, wooden counter, softly "
-    "blurred. Shallow depth of field."
+    "Vertical 9:16 UGC selfie video still, authentic iPhone front-camera look. A "
+    "charismatic, energetic 30-year-old American man holding the phone at arm's length, "
+    "filming himself mid-sentence. Confident genuine smile, looking straight into the "
+    "lens, expressive. Casual modern style (plain t-shirt or hoodie). Realistic skin "
+    "texture and pores, natural daylight, candid and real, slight handheld feel, no "
+    "studio polish. Clean simple modern interior, softly blurred. Shallow depth of field."
 )
 
-# Identifiants du catalogue officiel CLI (text-to-image), du + adapté au + photoréaliste.
+# Identifiants du catalogue officiel CLI (text-to-image photoréalistes).
 # On essaie dans l'ordre ; le 1er modèle qui accepte la requête est utilisé.
 CANDIDATE_MODELS = [
-    "nano_banana_2",       # Nano Banana Pro — photoréaliste, 2 cr/image
-    "text2image_soul_v2",  # Higgsfield Soul V2 — UGC réaliste, très bon marché
-    "seedream_v4_5",       # Seedream 4.5
+    "seedream_v5_lite",      # Seedream V5 Lite
+    "seedream_v4_5",         # Seedream 4.5
+    "flux_2",                # FLUX.2
+    "gpt_image_2",           # GPT Image 2
+    "soul_cinematic",        # Soul Cinematic — UGC réaliste
+    "cinematic_studio_2_5",  # Cinematic Studio 2.5
 ]
 
 OUTPUT = "out/images/avatar.png"
@@ -80,7 +83,7 @@ def main() -> int:
         print('❌ Manque les identifiants. Exporte HF_KEY="key:secret" (voir .env.example).')
         return 1
 
-    print("🎨 Génération de l'avatar boulangerie (9:16)…\n")
+    print("🎨 Génération de l'avatar PRÉSENTATEUR (host masculin, 9:16)…\n")
     last_err = None
     for model in CANDIDATE_MODELS:
         print(f"→ Essai du modèle : {model}")
