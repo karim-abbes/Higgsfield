@@ -27,6 +27,9 @@ import urllib.request
 
 import fal_client
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from render_google_card import load_dotenv  # noqa: E402
+
 MODEL = "fal-ai/wan/v2.2-14b/speech-to-video"
 AVATAR = os.getenv("AVATAR", "out/images/avatar.png")
 AUDIO = os.getenv("AUDIO", "out/voice/voice_sample.wav")
@@ -57,8 +60,9 @@ def upload(path: str) -> str:
 
 
 def main() -> int:
+    load_dotenv()
     if not os.getenv("FAL_KEY"):
-        print("❌ Manque FAL_KEY.")
+        print("❌ Manque FAL_KEY (env ou .env).")
         return 1
 
     start = time.time()
