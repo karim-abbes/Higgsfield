@@ -16,7 +16,8 @@ On construit une **machine à contenu vidéo** qui sert à la fois l'acquisition
 | **Format principal** | 🎬 **Makeover Reveal Show** (hôte récurrent transforme un commerce : fiche Google → site Bunua en 60s) | Viral natif + démo produit + bâtit l'influenceur + réutilise le pipeline |
 | **Format secondaire (fork)** | Testimonial par secteur (l'avatar-commerçant parle) — **conservé** comme variante | Garde l'option outbound 1:1 ; tag de restauration `v1-testimonial` |
 | **Avatar** | **1-2 hôtes récurrents** ultra-travaillés (pas une librairie par secteur) | Le makeover a besoin d'une star de chaîne, pas de 15 visages |
-| **Voix** | Clonée 1× par hôte (Qwen3-TTS), mise en cache | Cohérence + coût marginal nul |
+| **Voix** | **Générée par Kling** sur hook/CTA (vidéo+voix ensemble = synchro naturelle), puis **clonée** (Qwen3) pour la voix off de la séquence fiche→site | Wan S2V (audio externe) testé → lip-sync décroché ; Kling vidéo+voix plus réaliste |
+| **Avatar parlant** | ❌ **Wan S2V écarté** (lip-sync non synchro). ✅ **Kling vidéo+voix** (prouvé) pour hook/CTA + **voix clonée muxée** sur la transition | Réalisme/synchro priment sur le contrôle total de la voix |
 | **Device "pas de site"** | Bouton Website **absent** (fiche 100% crédible) ; cercle rouge ajouté en **overlay au montage**, pas dans la carte | La crédibilité « c'est MA fiche » prime ; on dirige l'attention sans falsifier l'UI |
 | **Commerces** | **Réels sans accord**, mis en héros → site offert gratuit ensuite (+ options payantes) | Authenticité + flywheel organique→outbound |
 | **Distribution** | **Organique** (TikTok/IG/FB) via viralité + suivi des perfs | Vision fondateur ; coût marginal nul si ça perce |
