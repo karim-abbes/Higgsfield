@@ -4,9 +4,13 @@
 > Un seul template → personnalisé à l'infini. 9:16 vertical, EN-US, organique (TikTok/IG/FB).
 
 ## Décisions verrouillées
-- **Hôte** : visage à la caméra au **hook** + **CTA** ; **voix off** pendant le reveal plein écran.
+- **Hôte** : **avatar IA récurrent** (persona de marque), visage à la caméra au **hook** + **CTA**, **voix off** pendant le reveal plein écran.
+  - Parle **au nom de Bunua** (« chez Bunua, on lui a refait son site »), **jamais** « je l'ai construit de mes mains » → honnêteté, pas de retour de bâton « c'est une IA ».
+  - La confiance ne repose pas sur un vrai visage → **l'URL live réelle devient la preuve centrale** (voir CTA).
 - **Ton** : **énergique / hype, mais positif** (commerce = héros, jamais moqué).
 - **Durée** : **~30-35 s**.
+- **Offre** : « **gratuit à essayer / à réclamer** » — jamais « gratuit à vie » (promesse intenable). Mécanisme = le site est **déjà en ligne**, l'action = venir le réclamer (zéro engagement-bait).
+- **URL réelle affichée** au reveal + CTA (`bunua.com/{slug}`), site **généré et en ligne AVANT de poster**. Prévoir un « c'est mon commerce, retirez-le ».
 
 ## Slots auto-remplis (depuis Places API)
 `{name}` · `{trade}` (ex: plumber) · `{city}` · `{rating}` · `{reviews}` · `{phone}`
