@@ -131,24 +131,24 @@ def design_to_embedding(description: str) -> str:
     sys.exit(f"❌ Réponse voice-design inattendue : {str(res)[:400]}")
 
 
-def resolve_voice(args) -> tuple[dict, str]:
+def resolve_voice(args, embed_cache: str) -> tuple[dict, str]:
     """Renvoie (kwargs TTS de voix, description). Précédence : --voice > cache >
-    --sample > voice-design. L'empreinte créée est mise en cache pour les épisodes suivants."""
+    --sample > voice-design. L'empreinte créée est mise en cache (par épisode)."""
     if args.voice:
         return {"voice": args.voice}, f"voix prédéfinie « {args.voice} »"
 
-    if os.path.exists(EMBED_CACHE) and not args.refresh_voice:
-        url = open(EMBED_CACHE).read().strip()
+    if os.path.exists(embed_cache) and not args.refresh_voice:
+        url = open(embed_cache).read().strip()
         if url.startswith("http"):
-            print(f"♻️  Empreinte hôte en cache : …{url[-32:]}")
+            print(f"♻️  Empreinte en cache : …{url[-32:]}")
             return {"speaker_voice_embedding_file_url": url}, "empreinte en cache"
 
     embed = clone_to_embedding(args.sample) if args.sample else design_to_embedding(args.design)
-    os.makedirs(HOST_DIR, exist_ok=True)
-    with open(EMBED_CACHE, "w") as f:
+    os.makedirs(os.path.dirname(embed_cache), exist_ok=True)
+    with open(embed_cache, "w") as f:
         f.write(embed)
-    print(f"✅ Empreinte hôte sauvegardée → {EMBED_CACHE}")
-    return {"speaker_voice_embedding_file_url": embed}, "nouvelle empreinte hôte"
+    print(f"✅ Empreinte sauvegardée → {embed_cache}")
+    return {"speaker_voice_embedding_file_url": embed}, "nouvelle empreinte"
 
 
 # ───────────────────────── Synthèse + mesure ─────────────────────────
@@ -203,7 +203,9 @@ def main() -> int:
     os.makedirs(out_dir, exist_ok=True)
 
     print(f"🎬 {script.get('business', slug)} · {len(beats)} beats")
-    voice_kwargs, voice_desc = resolve_voice(args)
+    # Empreinte par épisode (cohérence intra-épisode avec la voix Kling de hook/CTA).
+    embed_cache = os.path.join(out_dir, "embedding_url.txt")
+    voice_kwargs, voice_desc = resolve_voice(args, embed_cache)
     print(f"🎙  Voix : {voice_desc}\n")
 
     manifest = []

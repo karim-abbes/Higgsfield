@@ -28,27 +28,22 @@ import sys
 import time
 
 PY = sys.executable
-CARD = "out/images/google_profile.png"
-SITE = "out/images/bunua_site.png"
-HOOK = "out/clips/hook.mp4"
-CTA = "out/clips/cta.mp4"
-TRANS = "out/clips/transition.mp4"
-EMBED = "out/voice/host/embedding_url.txt"
 
 # Estimations de coût (USD) pour le manifest — indicatif (cf. skills).
 COST = {"hook": 0.63, "cta": 0.63, "transition": 0.63, "clone": 0.05,
         "voiceover": 0.05, "card": 0.01, "site": 0.0, "script": 0.0, "assemble": 0.0}
 
 
-def sh(cmd: list[str], capture: bool = False) -> str:
+def sh(cmd: list[str], capture: bool = False, env: dict | None = None) -> str:
     """Lance une commande, échoue fort si code ≠ 0. Renvoie stdout si capture."""
     print(f"\n$ {' '.join(cmd)}")
+    full_env = {**os.environ, **env} if env else None
     if capture:
-        p = subprocess.run(cmd, text=True, capture_output=True)
+        p = subprocess.run(cmd, text=True, capture_output=True, env=full_env)
         sys.stdout.write(p.stdout)
         sys.stderr.write(p.stderr)
     else:
-        p = subprocess.run(cmd, text=True)
+        p = subprocess.run(cmd, text=True, env=full_env)
     if p.returncode != 0:
         sys.exit(f"❌ Étape échouée (code {p.returncode}) : {' '.join(cmd)}")
     return p.stdout if capture else ""
@@ -69,56 +64,70 @@ def main() -> int:
     t0 = time.time()
     state: dict[str, dict] = {}
 
-    def step(name: str, output: str | None, cmd: list[str], capture: bool = False) -> str:
+    force_flag = ["--force"] if args.force else []
+
+    def step(name: str, output: str | None, cmd: list[str], capture: bool = False,
+             env: dict | None = None) -> str:
         """Exécute une étape avec cache (skip si output existe et pas --force)."""
         s = time.time()
         if output and os.path.exists(output) and not args.force:
             print(f"\n⏭  [{name}] {output} existe → réutilisé (cache).")
             state[name] = {"status": "cached", "sec": 0, "cost": 0.0}
             return ""
-        out = sh(cmd, capture=capture)
+        out = sh(cmd, capture=capture, env=env)
         if output and not os.path.exists(output):
             sys.exit(f"❌ [{name}] sortie attendue absente : {output}")
         state[name] = {"status": "run", "sec": round(time.time() - s, 1), "cost": COST.get(name, 0.0)}
         return out
 
-    # 1) Script (donne aussi le slug → chemins JSON/voix/épisode).
+    # 1) Script (donne aussi le slug → tous les chemins PAR ÉPISODE).
     out = step("script", None, [PY, "scripts/render_script.py", args.business, "--hook", args.hook], capture=True)
     m = re.search(r"out/scripts/\S+\.script\.json", out)
     if not m:
         sys.exit("❌ Impossible de retrouver le chemin du script généré.")
     script_json = m.group(0)
     slug = os.path.basename(script_json).replace(".script.json", "")
+
+    # Chemins PAR COMMERCE (évite que 2 commerces partagent les mêmes fichiers).
+    work = f"out/work/{slug}"
+    card = f"{work}/google_profile.png"
+    site = f"{work}/bunua_site.png"
+    clips = f"{work}/clips"
+    hook, cta, trans = f"{clips}/hook.mp4", f"{clips}/cta.mp4", f"{clips}/transition.mp4"
+    embed = f"out/voice/{slug}/embedding_url.txt"
     manifest_voice = f"out/voice/{slug}/voiceover.manifest.json"
     episode = f"out/episodes/{slug}.mp4"
-    print(f"\n📌 slug = {slug}")
+    print(f"\n📌 slug = {slug}  ·  travail → {work}")
 
     # 2) Carte Google (avant).
-    step("card", CARD, [PY, "scripts/render_google_card.py", args.business])
+    step("card", card, [PY, "scripts/render_google_card.py", args.business, "--out", card])
 
     # 3) Site Bunua (après) — screenshot de l'URL live.
     if args.skip_site:
-        if not os.path.exists(SITE):
-            sys.exit(f"❌ --skip-site mais {SITE} absent.")
+        if not os.path.exists(site):
+            sys.exit(f"❌ --skip-site mais {site} absent.")
         state["site"] = {"status": "cached", "sec": 0, "cost": 0.0}
     else:
-        step("site", SITE, [PY, "scripts/screenshot_site.py", args.bunua_url])
+        step("site", site, [PY, "scripts/screenshot_site.py", args.bunua_url, "--out", site])
 
-    # 4) Clips parlants hook + CTA (Kling/fal).
-    step("hook", HOOK, [PY, "scripts/generate_video_fal.py", "hook", "--script", script_json])
-    step("cta", CTA, [PY, "scripts/generate_video_fal.py", "cta", "--script", script_json])
+    # 4) Clips parlants hook + CTA (Kling/fal), texte exact depuis le script.
+    step("hook", hook, [PY, "scripts/generate_video_fal.py", "hook", "--script", script_json, "--out-dir", clips, *force_flag])
+    step("cta", cta, [PY, "scripts/generate_video_fal.py", "cta", "--script", script_json, "--out-dir", clips, *force_flag])
 
-    # 5) Voix de l'hôte : clonée 1× depuis hook+CTA, mise en cache (réutilisée ensuite).
-    step("clone", EMBED, [PY, "scripts/clone_host_voice.py"])
+    # 5) Voix de l'hôte : clonée depuis hook+CTA de CE commerce (cohérence intra-épisode).
+    step("clone", embed, [PY, "scripts/clone_host_voice.py", "--embed-out", embed],
+         env={"HOOK_CLIP": hook, "CTA_CLIP": cta})
 
-    # 6) Voix off du milieu (voix clonée).
+    # 6) Voix off du milieu (voix clonée, lue depuis out/voice/<slug>/embedding_url.txt).
     step("voiceover", manifest_voice, [PY, "scripts/render_voiceover.py", script_json])
 
     # 7) Transition morph fiche→site (silencieuse).
-    step("transition", TRANS, [PY, "scripts/generate_transition_fal.py", "--duration", "5"])
+    step("transition", trans, [PY, "scripts/generate_transition_fal.py",
+                               "--start", card, "--end", site, "--out", trans, "--duration", "5", *force_flag])
 
     # 8) Montage final + sous-titres.
-    step("assemble", episode, [PY, "scripts/assemble_episode.py", script_json])
+    step("assemble", episode, [PY, "scripts/assemble_episode.py", script_json,
+                               "--card", card, "--site", site, "--clips", clips])
 
     # Manifest d'exécution.
     total_cost = round(sum(v.get("cost", 0) for v in state.values()), 2)

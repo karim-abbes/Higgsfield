@@ -85,8 +85,8 @@ def line_for(beat: str, script_path: str | None) -> str:
     sys.exit(f"❌ Beat inconnu : {beat} (ou fournis --script).")
 
 
-def generate(beat: str, line: str, force: bool) -> None:
-    out = f"out/clips/{beat}.mp4"
+def generate(beat: str, line: str, force: bool, out_dir: str) -> None:
+    out = f"{out_dir}/{beat}.mp4"
     if os.path.exists(out) and not force:
         print(f"⏭  [{beat}] {out} existe déjà → conservé (--force pour régénérer).")
         return
@@ -108,7 +108,7 @@ def generate(beat: str, line: str, force: bool) -> None:
     url = first_url(result, "video", "url", "output")
     if not url:
         sys.exit(f"❌ Pas de vidéo : {str(result)[:300]}")
-    os.makedirs("out/clips", exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     urllib.request.urlretrieve(url, out)
     print(f"  ✅ {url}\n  💾 {out}")
 
@@ -117,6 +117,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Clips parlants Kling via fal.ai.")
     ap.add_argument("beat", nargs="?", default="hook", help="hook | cta | all")
     ap.add_argument("--script", help="Script JSON pour le texte exact du beat")
+    ap.add_argument("--out-dir", default="out/clips", help="Dossier de sortie des clips")
     ap.add_argument("--force", action="store_true", help="Régénère même si le clip existe")
     args = ap.parse_args()
 
@@ -126,7 +127,7 @@ def main() -> int:
 
     beats = ("hook", "cta") if args.beat == "all" else (args.beat,)
     for beat in beats:
-        generate(beat, line_for(beat, args.script), args.force)
+        generate(beat, line_for(beat, args.script), args.force, args.out_dir)
     return 0
 
 
