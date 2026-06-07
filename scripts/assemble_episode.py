@@ -81,12 +81,76 @@ def reveal_segment(video: str, audio: str, out: str) -> None:
          "-map", "[v]", "-map", "[a]", "-t", f"{m:.2f}", *VENC, *AENC, out])
 
 
+def audio_concat(audios: list[str], out: str) -> float:
+    """Concatène des MP3 en un m4a unique. Renvoie la durée (s)."""
+    cmd = [FF, "-y", "-loglevel", "error"]
+    for a in audios:
+        cmd += ["-i", a]
+    n = len(audios)
+    cmd += ["-filter_complex", "".join(f"[{i}:a]" for i in range(n)) + f"concat=n={n}:v=0:a=1[a]",
+            "-map", "[a]", *AENC, out]
+    run(cmd)
+    return dur(out)
+
+
+def card_segment(card: str, audios: list[str], circle: str | None, out: str, tmp: str) -> None:
+    """Fiche Google DYNAMIQUE : (1) Ken Burns push-in, puis (4) punch-in sur la zone
+    d'actions + (3) cercle rouge fade-in (le bouton site manquant). Durée = voix off."""
+    ca = f"{tmp}/card_audio.m4a"
+    total = audio_concat(audios, ca)
+    d1 = max(1.0, round(total * 0.55, 2))
+    d2 = max(0.8, round(total - d1, 2))
+    s1, s2, vid = f"{tmp}/card_s1.mp4", f"{tmp}/card_s2.mp4", f"{tmp}/card_vid.mp4"
+
+    # Shot 1 — Ken Burns (zoom lent) sur la fiche entière (prescale = anti-jitter).
+    run([FF, "-y", "-loglevel", "error", "-loop", "1", "-t", f"{d1}", "-i", card,
+         "-filter_complex",
+         f"[0:v]scale={W*2}:{H*2},zoompan=z='min(1+0.0011*on,1.10)':"
+         f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={int(d1*FPS)}:s={W}x{H}:fps={FPS},setsar=1[v]",
+         "-map", "[v]", "-t", f"{d1}", *VENC, s1])
+
+    # Shot 2 — punch-in sur le bas (actions/contact) + cercle rouge qui apparaît.
+    crop = f"crop={W}:{int(H*0.42)}:0:{int(H*0.50)},scale={W}:{H},fps={FPS},setsar=1"
+    if circle and os.path.exists(circle):
+        run([FF, "-y", "-loglevel", "error", "-loop", "1", "-t", f"{d2}", "-i", card,
+             "-loop", "1", "-t", f"{d2}", "-i", circle,
+             "-filter_complex",
+             f"[0:v]{crop}[b];[1:v]format=rgba,fade=in:st=0.2:d=0.5:alpha=1,scale=620:620[r];"
+             f"[b][r]overlay=(W-w)/2:(H-h)/2[v]",
+             "-map", "[v]", "-t", f"{d2}", *VENC, s2])
+    else:
+        run([FF, "-y", "-loglevel", "error", "-loop", "1", "-t", f"{d2}", "-i", card,
+             "-filter_complex", f"[0:v]{crop}[v]", "-map", "[v]", "-t", f"{d2}", *VENC, s2])
+
+    cf = f"{tmp}/card_concat.txt"
+    with open(cf, "w") as f:
+        f.write("file 'card_s1.mp4'\nfile 'card_s2.mp4'\n")
+    run([FF, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", cf, "-an", "-c", "copy", vid])
+    run([FF, "-y", "-loglevel", "error", "-i", vid, "-i", ca,
+         "-map", "0:v", "-map", "1:a", "-shortest", *VENC, *AENC, out])
+
+
+def site_scroll_segment(site_full: str, audios: list[str], out: str, tmp: str) -> None:
+    """Site Bunua DYNAMIQUE : scroll vertical d'un screenshot pleine page pendant la
+    voix kicker (si l'image est plus haute que l'écran ; sinon plan fixe en haut)."""
+    ca = f"{tmp}/site_audio.m4a"
+    total = audio_concat(audios, ca)
+    y = f"'min(max((ih-{H})*t/{total}\\,0)\\,ih-{H})'"
+    run([FF, "-y", "-loglevel", "error", "-loop", "1", "-i", site_full, "-i", ca,
+         "-filter_complex",
+         f"[0:v]scale={W}:-1,crop={W}:{H}:0:{y},fps={FPS},setsar=1[v]",
+         "-map", "[v]", "-map", "1:a", "-t", f"{total}", *VENC, *AENC, out])
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Assemble un épisode Makeover complet.")
     ap.add_argument("script", help="Script JSON de l'épisode (render_script.py)")
     ap.add_argument("--clips", default="out/clips", help="Dossier des clips (hook/cta/transition)")
     ap.add_argument("--card", default="out/images/google_profile.png")
-    ap.add_argument("--site", default="out/images/bunua_site.png")
+    ap.add_argument("--site", default="out/images/bunua_site.png",
+                    help="Image du site pour le kicker (idéalement pleine page → scroll)")
+    ap.add_argument("--circle", default="assets/red_circle.png",
+                    help="Cercle rouge (overlay sur la fiche). Ignoré si absent.")
     ap.add_argument("--out", help="Vidéo finale (défaut out/episodes/<slug>.mp4)")
     ap.add_argument("--no-subs", action="store_true", help="Ne pas brûler les sous-titres")
     args = ap.parse_args()
@@ -112,9 +176,9 @@ def main() -> int:
     os.makedirs(tmp, exist_ok=True)
     print("🎬 Construction des segments…")
     print("  · hook"); norm_clip(f"{args.clips}/hook.mp4", f"{tmp}/1_hook.mp4")
-    print("  · carte + stakes/setup"); image_segment(args.card, [audio["stakes"], audio["setup"]], f"{tmp}/2_card.mp4")
+    print("  · fiche (Ken Burns + punch-in + cercle)"); card_segment(args.card, [audio["stakes"], audio["setup"]], args.circle, f"{tmp}/2_card.mp4", tmp)
     print("  · morph + reveal"); reveal_segment(f"{args.clips}/transition.mp4", audio["reveal"], f"{tmp}/3_reveal.mp4")
-    print("  · site + kicker"); image_segment(args.site, [audio["kicker"]], f"{tmp}/4_site.mp4")
+    print("  · site (scroll vertical)"); site_scroll_segment(args.site, [audio["kicker"]], f"{tmp}/4_site.mp4", tmp)
     print("  · cta"); norm_clip(f"{args.clips}/cta.mp4", f"{tmp}/5_cta.mp4")
 
     concat_f = f"{tmp}/concat.txt"

@@ -91,7 +91,8 @@ def main() -> int:
     # Chemins PAR COMMERCE (évite que 2 commerces partagent les mêmes fichiers).
     work = f"out/work/{slug}"
     card = f"{work}/google_profile.png"
-    site = f"{work}/bunua_site.png"
+    site = f"{work}/bunua_site.png"          # above-the-fold → fin du morph
+    site_full = f"{work}/bunua_site_full.png"  # pleine page → scroll du kicker
     clips = f"{work}/clips"
     hook, cta, trans = f"{clips}/hook.mp4", f"{clips}/cta.mp4", f"{clips}/transition.mp4"
     embed = f"out/voice/{slug}/embedding_url.txt"
@@ -102,13 +103,15 @@ def main() -> int:
     # 2) Carte Google (avant).
     step("card", card, [PY, "scripts/render_google_card.py", args.business, "--out", card])
 
-    # 3) Site Bunua (après) — screenshot de l'URL live.
+    # 3) Site Bunua (après) — 2 captures : above-the-fold (morph) + pleine page (scroll).
     if args.skip_site:
-        if not os.path.exists(site):
-            sys.exit(f"❌ --skip-site mais {site} absent.")
+        for p in (site, site_full):
+            if not os.path.exists(p):
+                sys.exit(f"❌ --skip-site mais {p} absent.")
         state["site"] = {"status": "cached", "sec": 0, "cost": 0.0}
     else:
         step("site", site, [PY, "scripts/screenshot_site.py", args.bunua_url, "--out", site])
+        step("site_full", site_full, [PY, "scripts/screenshot_site.py", args.bunua_url, "--out", site_full, "--full-page"])
 
     # 4) Clips parlants hook + CTA (Kling/fal), texte exact depuis le script.
     step("hook", hook, [PY, "scripts/generate_video_fal.py", "hook", "--script", script_json, "--out-dir", clips, *force_flag])
@@ -131,7 +134,7 @@ def main() -> int:
         os.remove(episode)
         print(f"\n♻️  Amont modifié → réassemblage forcé ({episode}).")
     step("assemble", episode, [PY, "scripts/assemble_episode.py", script_json,
-                               "--card", card, "--site", site, "--clips", clips])
+                               "--card", card, "--site", site_full, "--clips", clips])
 
     # Manifest d'exécution.
     total_cost = round(sum(v.get("cost", 0) for v in state.values()), 2)
