@@ -90,9 +90,13 @@ def build_srt(words: list[dict]) -> str:
 
 
 def burn(video_in: str, srt: str, video_out: str) -> None:
-    style = ("Fontname=Arial Black,Fontsize=14,PrimaryColour=&H00FFFFFF,"
-             "OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,"
-             "Alignment=2,MarginV=120")
+    # Alignment=2 (ancré en bas) + MarginV en échelle libass (~288px de haut).
+    # MarginV=85 ≈ 70% de la hauteur : sous le visage, AU-DESSUS de l'UI TikTok/IG
+    # (qui occupe le bas ~18%). Ajustable via SUB_MARGIN_V (plus petit = plus bas).
+    margin_v = os.getenv("SUB_MARGIN_V", "85")
+    style = (f"Fontname=Arial Black,Fontsize=14,PrimaryColour=&H00FFFFFF,"
+             f"OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,"
+             f"Alignment=2,MarginV={margin_v}")
     subprocess.run(
         ["ffmpeg", "-y", "-loglevel", "error", "-i", video_in,
          "-vf", f"subtitles={srt}:force_style='{style}'",
