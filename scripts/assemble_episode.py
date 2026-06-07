@@ -29,6 +29,9 @@ import shutil
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from render_google_card import load_dotenv  # noqa: E402
+
 W, H, FPS = 1080, 1920, 30
 VF_NORM = (f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
            f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:black,fps={FPS},setsar=1")
@@ -88,6 +91,7 @@ def main() -> int:
     ap.add_argument("--no-subs", action="store_true", help="Ne pas brûler les sous-titres")
     args = ap.parse_args()
 
+    load_dotenv()
     if not shutil.which(FF) or not shutil.which(FP):
         sys.exit("❌ ffmpeg/ffprobe introuvables dans le PATH.")
     slug = os.path.basename(args.script).replace(".script.json", "")
