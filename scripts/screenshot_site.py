@@ -59,6 +59,22 @@ def main() -> int:
         print(f"🌐 Chargement ({'desktop' if args.desktop else 'mobile'}) : {args.url}")
         page.goto(args.url, wait_until="networkidle", timeout=60000)
         time.sleep(args.wait)
+
+        # Beaucoup de sites révèlent leurs sections AU SCROLL (animations / lazy-load).
+        # On défile jusqu'en bas pour tout déclencher, puis on remonte → capture pleine.
+        page.evaluate("""async () => {
+            await new Promise((resolve) => {
+                let y = 0; const dy = 350;
+                const t = setInterval(() => {
+                    window.scrollBy(0, dy); y += dy;
+                    if (y >= document.body.scrollHeight) { clearInterval(t); resolve(); }
+                }, 120);
+            });
+        }""")
+        page.wait_for_timeout(1200)
+        page.evaluate("window.scrollTo(0, 0)")
+        page.wait_for_timeout(500)
+
         page.screenshot(path=args.out, full_page=args.full_page)
         browser.close()
 
