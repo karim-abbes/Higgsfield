@@ -34,6 +34,12 @@ MODEL = "fal-ai/wan/v2.2-14b/speech-to-video"
 AVATAR = os.getenv("AVATAR", "out/images/avatar.png")
 AUDIO = os.getenv("AUDIO", "out/voice/voice_sample.wav")
 RESOLUTION = os.getenv("RESOLUTION", "580p")  # "580p" (cheap) ou "720p"
+# L'endpoint exige un prompt (description de la scène/action) en plus image+audio.
+PROMPT = os.getenv("PROMPT", (
+    "A charismatic young man talks directly to the camera, natural lip-sync, "
+    "expressive face, subtle head movements and hand gestures, energetic and "
+    "friendly, vertical 9:16 selfie video."
+))
 
 OUTPUT = f"out/archive/wan_s2v_test_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
 
@@ -75,6 +81,7 @@ def main() -> int:
         arguments={
             "image_url": image_url,
             "audio_url": audio_url,
+            "prompt": PROMPT,
             "resolution": RESOLUTION,
         },
         with_logs=True,
