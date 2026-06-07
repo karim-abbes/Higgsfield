@@ -49,15 +49,12 @@ AVATAR_PROMPT = (
     "studio polish. Clean simple modern interior, softly blurred. Shallow depth of field."
 )
 
-# Identifiants du catalogue officiel CLI (text-to-image photoréalistes).
+# ⚠️ Le SDK Python n'utilise PAS les noms courts du CLI (nano_banana_2…) mais le
+# format "organisation/modèle/version/tâche". Les noms courts → "Model not found".
+# ID confirmé via la doc du client Python (cf. PyPI higgsfield-client).
 # On essaie dans l'ordre ; le 1er modèle qui accepte la requête est utilisé.
 CANDIDATE_MODELS = [
-    "seedream_v5_lite",      # Seedream V5 Lite
-    "seedream_v4_5",         # Seedream 4.5
-    "flux_2",                # FLUX.2
-    "gpt_image_2",           # GPT Image 2
-    "soul_cinematic",        # Soul Cinematic — UGC réaliste
-    "cinematic_studio_2_5",  # Cinematic Studio 2.5
+    "bytedance/seedream/v4/text-to-image",  # Seedream V4 — photoréaliste (confirmé)
 ]
 
 OUTPUT = "out/images/avatar.png"
@@ -93,7 +90,8 @@ def main() -> int:
                 arguments={
                     "prompt": AVATAR_PROMPT,
                     "aspect_ratio": "9:16",
-                    "resolution": "2k",
+                    "resolution": "2K",      # ⚠️ majuscule (schéma SDK)
+                    "camera_fixed": False,
                 },
             )
         except Exception as e:  # noqa: BLE001 — on veut juste passer au modèle suivant
@@ -116,7 +114,8 @@ def main() -> int:
         return 0
 
     print(f"\n❌ Aucun modèle n'a fonctionné. Dernière erreur : {last_err}")
-    print("👉 Vérifie les noms dispo avec le CLI : `higgsfield model list`")
+    print("👉 Le SDK veut le format 'org/modèle/version/tâche' (PAS les noms courts du CLI).")
+    print("   Colle la sortie de `higgsfield model list` pour caler les bons IDs.")
     return 1
 
 
